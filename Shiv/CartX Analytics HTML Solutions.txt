@@ -1,0 +1,50 @@
+
+-- Q1
+select name, category, price, stock_quantity
+from products
+where stock_quantity <=10;
+
+-- Q2
+with sales_summary as
+(
+select o.*,oi.*,p.*
+from orders o
+inner join
+order_items oi on o.order_id=oi.order_id AND o.status='Delivered'
+inner join
+products p on p.product_id = oi.product_id
+)
+select payment_method, sum(quantity*price*(1-discount_pct*1.0/100.0)) as total_revenue from sales_summary 
+group by payment_method;
+
+
+
+-- Q3
+with cust as(
+select c.full_name as customer_name, c.city, c.account_type
+from customers c
+inner join
+orders o on c.customer_id=o.customer_id)
+select cust.*, count(customer_name) as orders_placed 
+from cust
+group by customer_name
+having 
+count(customer_name)>1;
+
+
+
+-- Q4
+with sales_summary as
+(
+select p.name, p.category,sum(oi.quantity*p.price*(1-oi.discount_pct*1.0/100.0)) as revenue
+from orders o
+inner join
+order_items oi on o.order_id=oi.order_id AND o.status='Delivered'
+inner join
+products p on p.product_id = oi.product_id
+group by p.name, p.category
+)
+select name,category,revenue, 
+dense_rank() over(partition by category order by revenue desc) as category_rank,
+round(revenue/sum(revenue) over(partition by category)*100,2) as pct_of_category
+from sales_summary;
