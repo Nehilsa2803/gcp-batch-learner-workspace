@@ -1,0 +1,47 @@
+1) 
+
+select p.Full_name, t.team_name, p.role from players p join teams t on p.team_id = t.team_id
+where p.nationality = 'Indian' and p.role = 'Batsman'
+
+
+2)
+ select t.team_name, sum(i.runs_scored) as total_runs, round(sum(i.runs_scored)*100.0 / sum(i.balls_faced), 2) as team_strike_rate from teams t join players p on t.team_id = p.team_id 
+                        join innings i on p.player_id = i.player_id group by t.team_name
+
+3)
+ 
+select p.full_name, t.team_name, count(i.match_id) as matches_played, sum(i.runs_scored) as total_runs from players p join teams t on p.team_id = t.team_id
+join innings i on p.player_id = i.player_id 
+group by p.player_id,p.full_name, t.team_name 
+having matches_played >2 
+
+4) 
+
+WITH cte AS (
+    SELECT
+        p.full_name,
+        t.team_name,
+        SUM(i.runs_scored) AS total_runs
+    FROM players p
+    JOIN teams t
+        ON p.team_id = t.team_id
+    JOIN innings i
+        ON p.player_id = i.player_id
+    GROUP BY
+        p.player_id,
+        p.full_name,
+        t.team_name
+)
+
+SELECT
+    *,
+    DENSE_RANK() OVER (
+        PARTITION BY team_name
+        ORDER BY total_runs DESC
+    ) AS rnk,
+    ROUND(
+        total_runs * 100.0 /
+        SUM(total_runs) OVER (PARTITION BY team_name),
+        2
+    ) AS percent_team_runs
+FROM cte;
