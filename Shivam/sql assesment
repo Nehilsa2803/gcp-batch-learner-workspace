@@ -1,0 +1,32 @@
+WITH a as(
+Select ep.category,ep.sub_category,sum(et.Sales_Amount) as sales
+    from ex_products ep join ex_transactions et on ep.product_id=et.product_id
+    join ex_orders eo on et.order_id=eo.order_id
+    where lower(eo.order_status) not in ('canceled', 'unavailable')
+    group by ep.category,ep.sub_category
+),
+b as(
+    SELECT category,sub_category,sales,sum(sales) over(Partition by category) as cat_sales from a
+)
+SELECT category,sub_category,sales,cat_sales,sales*100.0/cat_sales as sales_contribution_to_category from b where sub_category='Appliances'
+
+
+
+WITH a as(
+Select ep.category,ep.sub_category,sum(et.Sales_Amount) as sales
+    from ex_products ep join ex_transactions et on ep.product_id=et.product_id
+    group by ep.category,ep.sub_category
+),
+b as(
+    SELECT category,sub_category,sales,sum(sales) over() as cat_sales from a
+)
+SELECT category,sub_category,sales,cat_sales,sales*100.0/cat_sales as sales_contribution_to_category from b where sales*100.0/cat_sales>7
+
+
+
+WITH a as(
+Select ep.category,ep.sub_category,sum(et.Sales_Amount) as sales
+    from ex_products ep join ex_transactions et on ep.product_id=et.product_id
+    group by ep.category,ep.sub_category
+)
+SELECT category,sub_category,sales,Rank() over(Partition By category ORDER BY sales DESC) as rnk from a 
