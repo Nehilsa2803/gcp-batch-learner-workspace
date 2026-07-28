@@ -1,0 +1,73 @@
+--  Q1
+
+with t1 as
+(
+select 
+p.category as Category, p.sub_category as Sub_Category,
+round(sum(t.sales),2) as Sub_Cat_Sales,
+rank() over(partition by p.category order by round(sum(t.sales),2) DESC) as Sub_Cat_Rank
+from products p
+inner join
+transactions t on t.product_id = p.product_id
+join orders o on o.order_id = t.Order_ID AND o.order_status NOT IN ('unavailable', 'canceled')
+group by p.category, p.sub_category
+)
+select t1.*, 
+round(Sub_Cat_Sales*100.0/sum(Sub_Cat_Sales) over(partition by Category),2) as Sales_Contribution_to_Category,
+round(Sub_Cat_Sales*100.0/sum(Sub_Cat_Sales) over(),2) as Overall_Sales_Contribution
+from t1
+order by Category, Sub_Category;
+
+
+-- Q2
+
+with t1 as
+(
+select 
+p.category as Category, p.sub_category as Sub_Category,
+round(sum(t.sales),2) as Sub_Cat_Sales,
+rank() over(partition by p.category order by round(sum(t.sales),2) DESC) as Sub_Cat_Rank
+from products p
+inner join
+transactions t on t.product_id = p.product_id
+join orders o on o.order_id = t.Order_ID AND o.order_status NOT IN ('unavailable', 'canceled')
+group by p.category, p.sub_category
+),
+report as
+(
+select t1.*, 
+round(Sub_Cat_Sales*100.0/sum(Sub_Cat_Sales) over(partition by Category),2) as Sales_Contribution_to_Category,
+round(Sub_Cat_Sales*100.0/sum(Sub_Cat_Sales) over(),2) as Overall_Sales_Contribution
+from t1
+)
+select report.Sub_Category from report
+where overall_sales_contribution>=7
+order by Category, Sub_Category;
+
+
+--Q3
+
+with t1 as
+(
+select 
+p.category as Category, p.sub_category as Sub_Category,
+round(sum(t.sales),2) as Sub_Cat_Sales,
+rank() over(partition by p.category order by round(sum(t.sales),2) DESC) as Sub_Cat_Rank
+from products p
+inner join
+transactions t on t.product_id = p.product_id
+join orders o on o.order_id = t.Order_ID AND o.order_status NOT IN ('unavailable', 'canceled')
+group by p.category, p.sub_category
+),
+report as
+(
+select t1.*, 
+round(Sub_Cat_Sales*100.0/sum(Sub_Cat_Sales) over(partition by Category),2) as Sales_Contribution_to_Category,
+round(Sub_Cat_Sales*100.0/sum(Sub_Cat_Sales) over(),2) as Overall_Sales_Contribution
+from t1
+)
+select report.sub_category, report.Sub_Cat_Rank from report
+where Sub_Category='Machines'
+order by Category, Sub_Category;
+
+
