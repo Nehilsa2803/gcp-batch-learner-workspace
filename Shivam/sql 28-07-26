@@ -1,0 +1,37 @@
+Select category,sub_category,count(product_id) as product_count from ex_products group by grouping sets(category,sub_category)
+
+Select category,sub_category,count(product_id) as product_count from ex_products group by cube(category,sub_category)
+
+Select category,sub_category,count(product_id) as product_count from ex_products group by rollup(category,sub_category)
+
+
+
+
+
+
+SELECT el.region,el.state,el.city,Sum(et.Sales_Amount) as 'total Sales'
+    from ex_locations el 
+    join ex_customers ec ON el.postal_code=ec.postal_code
+    JOIN ex_orders eo on ec.customer_id=eo.customer_id
+    join ex_transactions et on eo.order_id=et.order_id
+
+    Where eo.order_status='delivered'
+
+    GROUP by ROLLUP(el.region,el.state,el.city)
+
+
+SELECT el.region,el.state,el.city,Sum(et.Sales_Amount) as 'total Sales'
+    from ex_locations el 
+    join ex_customers ec ON el.postal_code=ec.postal_code
+    JOIN ex_orders eo on ec.customer_id=eo.customer_id
+    join ex_transactions et on eo.order_id=et.order_id
+    Where eo.order_status='delivered'
+    GROUP by cube(el.region,el.state,el.city)
+
+SELECT el.region,el.state,el.city,Sum(et.Sales_Amount) as 'total Sales'
+    from ex_locations el 
+    join ex_customers ec ON el.postal_code=ec.postal_code
+    JOIN ex_orders eo on ec.customer_id=eo.customer_id
+    join ex_transactions et on eo.order_id=et.order_id
+    Where eo.order_status='delivered'
+    GROUP by grouping sets ((region, state, city),(region, state),(region),())
