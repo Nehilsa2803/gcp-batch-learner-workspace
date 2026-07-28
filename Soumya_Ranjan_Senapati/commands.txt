@@ -1,6 +1,5 @@
-Do changes
 git add .
-git commit -m "Your descriptive message here"
-git pull
-git push
+git commit -m "Your changes"
 
+git pull --rebase origin main
+git push origin main
