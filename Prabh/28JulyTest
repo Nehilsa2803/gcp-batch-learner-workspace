@@ -1,0 +1,67 @@
+TASK 1
+WITH sub_cat_sales as (
+	SELECT p.category,p.sub_category,
+		sum(t.sales_amount) as sub_cat_sales
+	FROM ex_orders o 
+		JOIN ex_transactions t 
+		ON o.order_id=t.order_id 
+			AND order_status not in ('canceled','unavailable')
+		JOIN ex_products p 
+		ON t.product_id= p.product_id
+	GROUP BY p.category,p.sub_category
+),
+final_table as(
+SELECT *, 
+	rank() over (partition by category order by sub_cat_sales desc) as sub_cat_rank,
+	round((sub_cat_sales*100.00)/sum(sub_cat_sales) over(partition by category),2) as sales_contribution_to_category,
+	round((sub_cat_sales*100.00)/sum(sub_cat_sales) over(),2) as overall_sales_contribution
+FROM sub_cat_sales
+)
+SELECT * from final_table
+WHERE sub_category='Appliances';
+
+
+TASK 2
+WITH sub_cat_sales as (
+	SELECT p.category,p.sub_category,
+		sum(t.sales_amount) as sub_cat_sales
+	FROM ex_orders o 
+		JOIN ex_transactions t 
+		ON o.order_id=t.order_id 
+			AND order_status not in ('canceled','unavailable')
+		JOIN ex_products p 
+		ON t.product_id= p.product_id
+	GROUP BY p.category,p.sub_category
+),
+final_table as(
+SELECT *, 
+	rank() over (partition by category order by sub_cat_sales desc) as sub_cat_rank,
+	round((sub_cat_sales*100.00)/sum(sub_cat_sales) over(partition by category),2) as sales_contribution_to_category,
+	round((sub_cat_sales*100.00)/sum(sub_cat_sales) over(),2) as overall_sales_contribution
+FROM sub_cat_sales
+)
+SELECT * from final_table
+WHERE sub_category in ('Accessories','Storage','Tables','Furnishings');
+
+
+TASK 3
+WITH sub_cat_sales as (
+	SELECT p.category,p.sub_category,
+		sum(t.sales_amount) as sub_cat_sales
+	FROM ex_orders o 
+		JOIN ex_transactions t 
+		ON o.order_id=t.order_id 
+			AND order_status not in ('canceled','unavailable')
+		JOIN ex_products p 
+		ON t.product_id= p.product_id
+	GROUP BY p.category,p.sub_category
+),
+final_table as(
+	SELECT *, 
+		rank() over (partition by category order by sub_cat_sales desc) as sub_cat_rank,
+		round((sub_cat_sales*100.00)/sum(sub_cat_sales) over(partition by category),2) as sales_contribution_to_category,
+		round((sub_cat_sales*100.00)/sum(sub_cat_sales) over(),2) as overall_sales_contribution
+	FROM sub_cat_sales
+)
+SELECT * from final_table
+WHERE sub_category='Machines';
