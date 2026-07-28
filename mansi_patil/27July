@@ -1,0 +1,84 @@
+— 1. 
+
+WITH DeliveredOrders AS 
+(  
+SELECT          
+   l.region,           
+   CAST(o.order_purchase_date AS DATE) AS order_date,           
+   t.sales_amount       
+FROM ex_orders o     
+JOIN ex_customers c         
+   ON o.customer_id = c.customer_id     
+JOIN locations_01 l         
+   ON l.postal_code = c.postal_code     
+JOIN ex_transactions t         
+   ON t.order_id = o.order_id     
+WHERE o.order_status = 'delivered' 
+),  
+
+AggregatedSales AS 
+(     
+SELECT         
+   region,          
+   order_date,         
+   YEAR(order_date) AS sales_year,         
+   MONTH(order_date) AS sales_month,         
+   DATENAME(MONTH, order_date) AS month_name,         
+   ROUND(SUM(sales_amount), 2) AS total_sales     
+FROM DeliveredOrders     
+GROUP BY          
+   region, order_date,          
+   YEAR(order_date),          
+   MONTH(order_date),          
+   DATENAME(MONTH, order_date) 
+)  
+-- Step 3: Calculate Month-to-Date (MTD) and Year-to-Date (YTD) sales 
+SELECT      
+   region,     
+   order_date,     
+   sales_year AS Year,     
+   sales_month AS Month,      
+   month_name AS Month_name,     
+   total_sales AS Sales,      
+   SUM(total_sales) OVER ( PARTITION BY region, sales_year, sales_month  ORDER BY order_date ) AS MTD,
+   SUM(total_sales) OVER (   PARTITION BY region, sales_year   ORDER BY order_date ) AS YTD  
+FROM AggregatedSales 
+ORDER BY region, order_date;
+
+
+— 2.
+
+SELECT   
+    c.campaign_id,  
+    ch.channel_name,  
+    SUM(cm.impressions) AS impressions,  
+    SUM(cm.clicks) AS clicks,  
+    SUM(cm.conversions) AS conversions  
+FROM ex_campaigns c  
+JOIN ex_campaign_metrics cm   
+    ON c.campaign_id = cm.campaign_id  
+JOIN ex_channel ch   
+    ON c.channel_id = ch.channel_id  
+GROUP BY   
+    c.campaign_id,  
+    ch.channel_name;
+
+
+
+— 3.
+
+SELECT   
+    c.campaign_id,  
+    ch.channel_name,  
+    SUM(cm.impressions) AS impressions,  
+    SUM(cm.clicks) AS clicks,  
+    SUM(cm.conversions) AS conversions  
+FROM ex_campaigns c  
+JOIN ex_campaign_metrics cm   
+    ON c.campaign_id = cm.campaign_id  
+JOIN ex_channel ch   
+    ON c.channel_id = ch.channel_id  
+GROUP BY   
+    c.campaign_id,  
+    ch.channel_name;
+
