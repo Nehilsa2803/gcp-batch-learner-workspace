@@ -1,0 +1,68 @@
+Q1. Retrieve the title and release year of all English language movies released after 2020, sorted by most recent first.
+
+select
+    title,
+    release_year
+from movies
+where language = 'English'
+and release_year > 2020
+order by release_year desc;
+
+Q2. For each genre, find total box office collection and average user rating.
+
+select
+    m.genre,
+    sum(b.collection_cr) as total_box_office,
+    round(avg(r.rating),2) as avg_user_rating
+from movies as m
+join box_office as b
+on m.movie_id = b.movie_id
+join reviews as r
+on m.movie_id = r.movie_id
+group by m.genre;
+
+Q3. Show eligible directors, number of movies, and total box office collection.
+
+select
+    d.full_name,
+    count(m.movie_id) as total_movies,
+    sum(b.collection_cr) as total_box_office
+from directors as d
+join movies as m
+on d.director_id = m.director_id
+join box_office as b
+on m.movie_id = b.movie_id
+group by
+    d.full_name
+having count(m.movie_id) > 1;
+
+Q4. For each movie, show title, genre, collection, genre rank, and percentage of genre total rounded to 2 decimals.
+
+with cte as
+(
+    select
+        m.title,
+        m.genre,
+        b.collection_cr,
+        dense_rank() over
+        (
+            partition by m.genre
+            order by b.collection_cr desc
+        ) as genre_rank,
+        round(
+            b.collection_cr * 100.0 /
+            sum(b.collection_cr) over(partition by m.genre),
+            2
+        ) as genre_percentage
+    from movies as m
+    join box_office as b
+    on m.movie_id = b.movie_id
+)
+
+select
+    title,
+    genre,
+    collection_cr,
+    genre_rank,
+    genre_percentage
+from cte;
