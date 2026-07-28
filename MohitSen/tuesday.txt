@@ -1,0 +1,51 @@
+-- rightmost se groupby
+select category, sub_category, count(product_id) as product_count
+from ex_products
+group by grouping sets(category, sub_category);
+
+-- m * n cross join type results
+select category, sub_category, count(product_id) as product_count
+from ex_products
+group by cube(category, sub_category);
+
+-- category wise sub_category and grand total
+select category, sub_category, count(product_id) as product_count
+from ex_products
+group by rollup(category, sub_category);
+
+-- Understanding rollup Enqurious
+SELECT 
+    region, 
+    order_month,
+    SUM(sales) AS total_sales
+FROM sales_summary
+GROUP BY ROLLUP(region, order_month);
+
+select * from sales_summary;
+
+-- Geographical sales report
+select l.region, l.state, l.city, round(sum(t.sales_amount), 2) as total_sales from locations_01 as l
+join ex_customers on
+    ex_customers.postal_code = l.postal_code
+join ex_orders on
+    ex_orders.customer_id = ex_customers.customer_id
+join ex_transactions t on
+    t.order_id = ex_orders.order_id
+where ex_orders.order_status = 'Delivered'
+group by rollup(l.region, l.state, l.city);
+
+--cube
+select l.region, l.state, l.city, round(sum(t.sales_amount), 2) as total_sales from locations_01 as l
+join ex_customers on
+    ex_customers.postal_code = l.postal_code
+join ex_orders on
+    ex_orders.customer_id = ex_customers.customer_id
+join ex_transactions t on
+    t.order_id = ex_orders.order_id
+where ex_orders.order_status = 'Delivered'
+group by grouping sets(
+    (l.region, l.state, l.city),
+    (l.region, l.state),
+    (l.region),
+    ()
+);
