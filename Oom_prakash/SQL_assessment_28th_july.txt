@@ -1,0 +1,86 @@
+
+
+Question 1 :
+
+select 
+category,
+sub_category,
+round(SUM(Sales_Amount),2) as sub_category_sales,
+DENSE_RANK() over (partition by category order by sum(Sales_Amount)desc) as sub_category_rank
+from 
+ex_products ep 
+join 
+ex_transactions et
+on ep.product_id=et.product_id
+join 
+ex_orders eo
+on et.order_id=eo.order_id
+where eo.order_status not in ('canceled','unavailable')
+group by category,sub_category
+)
+select temp.*,
+round(sub_category_sales*100/SUM(sub_category_sales) over (partition by category),2)
+as sales_contribution_to_category,
+round(sub_category_sales*100/SUM(sub_category_sales) over (),2) 
+as overall_sales_contribution  
+from temp
+order by category,sub_category;
+
+
+Question 2 :
+
+with temp as
+(
+select 
+category,
+sub_category,
+round(SUM(Sales_Amount),2) as sub_category_sales,
+DENSE_RANK() over (partition by category order by sum(Sales_Amount)desc) as sub_category_rank
+from 
+ex_products ep 
+join 
+ex_transactions et
+on ep.product_id=et.product_id
+join 
+ex_orders eo
+on et.order_id=eo.order_id
+where eo.order_status not in ('canceled','unavailable')
+group by category,sub_category
+)
+,temp2 as (select temp.*,
+round(sub_category_sales*100/SUM(sub_category_sales) over (partition by category),2)
+as sales_contribution_to_category,
+round(sub_category_sales*100/SUM(sub_category_sales) over (),2) 
+as overall_sales_contribution  
+from temp)
+
+select sub_category from temp2 where overall_sales_contribution>7;
+
+Question 3:
+
+with temp as
+(
+select 
+category,
+sub_category,
+round(SUM(Sales_Amount),2) as sub_category_sales,
+DENSE_RANK() over (partition by category order by sum(Sales_Amount)desc) as sub_category_rank
+from 
+ex_products ep 
+join 
+ex_transactions et
+on ep.product_id=et.product_id
+join 
+ex_orders eo
+on et.order_id=eo.order_id
+where eo.order_status not in ('canceled','unavailable')
+group by category,sub_category)
+
+select temp.*,
+round(sub_category_sales*100/SUM(sub_category_sales) over (partition by category),2)
+as sales_contribution_to_category,
+round(sub_category_sales*100/SUM(sub_category_sales) over (),2) 
+as overall_sales_contribution  
+from temp where sub_category='Machines'
+
+
