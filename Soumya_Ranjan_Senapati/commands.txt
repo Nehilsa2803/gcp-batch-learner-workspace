@@ -1,0 +1,6 @@
+Do changes
+git add .
+git commit -m "Your descriptive message here"
+git pull
+git push
+
