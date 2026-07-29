@@ -1,0 +1,124 @@
+28/07/2026
+q1
+
+select category,sub_category,count(product_id) as product_count
+from ex_products
+group by rollup(category,sub_category);
+
+q2
+
+select category,sub_category,count(product_id) as product_count
+from ex_products
+group by cube(category,sub_category)
+order by category desc;
+
+q3
+
+select category,sub_category,count(product_id) as product_count
+from ex_products
+group by grouping sets(category,sub_category);
+
+
+Task 1: Hierarchical Sales Report with ROLLUP
+Scenario
+The VP of Sales needs a hierarchical summary of total sales that rolls up from city level to state level to region level, and finally to a grand total. This report will help identify the geographic distribution of sales at each level of the organization.
+
+Your Task
+Write a query that generates a sales report summarizing total sales across regions, states, and cities using the ROLLUP function.
+
+Your report must include:
+
+Total sales for each city (within its state and region)
+Subtotals for each state (all cities combined within that state)
+Subtotals for each region (all states combined within that region)
+A grand total for all regions, states, and cities
+Expected Output Format
+Your output should look similar to this:
+
+
+
+solution :
+select l.region,l.state,l.city,sum(t.sales_amount) as total_sales
+from ex_locations l
+join ex_customers c
+on c.postal_code=l.postal_code
+join ex_orders o on 
+o.customer_id=c.customer_id
+join ex_transactions t on 
+t.Order_ID=o.order_id
+ where o.order_status='delivered'
+ group by rollup(l.region ,l.state,l.city);
+
+
+
+Task 2: Comprehensive Sales Analysis with CUBE
+Scenario
+The Chief Strategy Officer wants to explore all possible combinations of geographic groupings. They're not just interested in the standard hierarchy — they want to see sales by city across all regions, by state across all regions, and every other possible combination to uncover hidden patterns.
+
+Your Task
+Write a query that generates a comprehensive sales report showing total sales for all possible combinations of regions, states, and cities using the CUBE function.
+
+Your report must include:
+
+Total sales for each city within a state and region
+Subtotals for each state across all cities in that state
+Subtotals for each region across all states and cities in that region
+Subtotals for each city across all regions (city-specific totals)
+Subtotals for each state across all regions (state-specific totals)
+A grand total for all regions, states, and cities
+Expected Output Format
+Your output should show all 8 possible grouping combinations (2³ = 8):
+
+
+solution :
+select l.region,l.state,l.city,sum(t.sales_amount) as total_sales
+from ex_locations l
+join ex_customers c
+on c.postal_code=l.postal_code
+join ex_orders o on 
+o.customer_id=c.customer_id
+join ex_transactions t on 
+t.Order_ID=o.order_id
+ where o.order_status='delivered'
+ group by cube(l.region ,l.state,l.city);
+
+
+
+
+Task 3: Custom Sales Report with GROUPING SETS
+Scenario
+The Finance team has a specific reporting requirement. They don't need all combinations from CUBE, but they want more control than ROLLUP provides. They've requested a custom report with exactly four grouping levels tailored for their budget allocation model.
+
+Your Task
+Write a query that generates a sales report for specific combinations of regions, states, and cities using the GROUPING SETS function.
+
+Your report must include exactly these groupings:
+
+Total sales for each city within a state and region (region, state, city)
+Subtotals for each state within a region (region, state)
+Subtotals for each region (region)
+A grand total for all regions, states, and cities ()
+Expected Output Format
+Your output should show exactly 4 grouping combinations:
+
+solution :
+SELECT
+    l.region,
+    l.state,
+    l.city,
+    SUM(t.sales_amount) AS total_sales
+FROM ex_locations l
+JOIN ex_customers c
+    ON c.postal_code = l.postal_code
+JOIN ex_orders o
+    ON o.customer_id = c.customer_id
+JOIN ex_transactions t
+    ON t.order_id = o.order_id
+WHERE o.order_status = 'delivered'
+GROUP BY GROUPING SETS
+(
+    (l.region, l.state, l.city),  -- City totals
+    (l.region, l.state),          -- State subtotals
+    (l.region),                   -- Region subtotals
+    ()                            -- Grand total
+);
