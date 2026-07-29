@@ -1,0 +1,136 @@
+===========================================
+HEALTHCARE PYTHON ASSESSMENT SOLUTION REPORT
+===========================================
+
+--- QUESTION 1: 1. List Comprehension ---
+[YOUR CODE]
+# Write your code here:
+anonymized_names = ['REDACTED' for i in patients_df['name']]
+print(anonymized_names)
+
+[EXPECTED SOLUTION]
+anonymized_names = ['REDACTED' for name in name_list]
+print(anonymized_names)
+
+[FEEDBACK]
+Great attempt! Compare your logic with the expected solution.
+
+===========================================
+
+--- QUESTION 2: 2. Pandas Basics ---
+[YOUR CODE]
+# Write your code here:
+elderly_patients = patients_df[patients_df['age'] >= 65]
+print(elderly_patients)
+
+[EXPECTED SOLUTION]
+elderly_patients = patients_df[patients_df['age'] >= 65]
+print(elderly_patients)
+
+[FEEDBACK]
+Great attempt! Compare your logic with the expected solution.
+
+===========================================
+
+--- QUESTION 3: 3. Pandas Grouping ---
+[YOUR CODE]
+# Write your code here:
+df = admissions_df.groupby('diagnosis').agg(patient_count = ('patient_id', 'count'))
+print(df)
+
+[EXPECTED SOLUTION]
+diagnosis_counts = admissions_df.groupby('diagnosis').size()
+print(diagnosis_counts)
+
+[FEEDBACK]
+Great attempt! Compare your logic with the expected solution.
+
+===========================================
+
+--- QUESTION 4: 4. Pandas Joining ---
+[YOUR CODE]
+# Write your code here:
+df = admissions_df.merge(patients_df, on='patient_id', how='inner')
+df.head()
+
+[EXPECTED SOLUTION]
+merged_df = pd.merge(admissions_df, patients_df, on='patient_id', how='inner')
+print(merged_df.head())
+
+[FEEDBACK]
+Great attempt! Compare your logic with the expected solution.
+
+===========================================
+
+--- QUESTION 5: 5. Function Apply ---
+[YOUR CODE]
+# Write your code here:
+def mask_name(name):
+ temp = name.split(' ')
+ return temp[0][0] + '.' + temp[-1][0]
+
+patients_df['initial'] = patients_df['name'].apply(mask_name)
+patients_df.head()
+
+
+[EXPECTED SOLUTION]
+def mask_name(name):
+    parts = name.split()
+    return ''.join([p[0] + '.' for p in parts])
+
+patients_df['name'] = patients_df['name'].apply(mask_name)
+print(patients_df)
+
+[FEEDBACK]
+Great attempt! Compare your logic with the expected solution.
+
+===========================================
+
+--- QUESTION 6: 6. Data Cleaning ---
+[YOUR CODE]
+# Write your code here:
+admissions_df['discharge_date'] = admissions_df['discharge_date'].fillna('Still Admitted')
+print(admissions_df)
+
+[EXPECTED SOLUTION]
+admissions_df['discharge_date'] = admissions_df['discharge_date'].fillna('Still Admitted')
+print(admissions_df)
+
+[FEEDBACK]
+Great attempt! Compare your logic with the expected solution.
+
+===========================================
+
+--- QUESTION 7: 7. String Manipulation ---
+[YOUR CODE]
+# Write your code here:
+admissions_df['diagnosis'] = admissions_df['diagnosis'].str.upper()
+print(admissions_df)
+
+[EXPECTED SOLUTION]
+admissions_df['diagnosis'] = admissions_df['diagnosis'].str.upper()
+print(admissions_df)
+
+[FEEDBACK]
+Great attempt! Compare your logic with the expected solution.
+
+===========================================
+
+--- QUESTION 8: 8. Time Series / Dates ---
+[YOUR CODE]
+# Write your code here:
+admissions_df['admission_date'] = pd.to_datetime(admissions_df['admission_date'])
+admissions_df['admission_month'] = admissions_df['admission_date'].dt.month
+
+print(admissions_df)
+
+[EXPECTED SOLUTION]
+admissions_df['admission_date'] = pd.to_datetime(admissions_df['admission_date'])
+admissions_df['admission_month'] = admissions_df['admission_date'].dt.month
+print(admissions_df)
+
+[FEEDBACK]
+Great attempt! Compare your logic with the expected solution.
+
+===========================================
+
