@@ -1,0 +1,101 @@
+Twinkle Patre
+28 July 2026
+
+1. SELECT
+    l.region,
+    l.state,
+    l.city,
+    SUM(t.sales_amount) AS total_sales
+FROM ex_locations AS l
+JOIN ex_customers AS c
+    ON l.postal_code = c.postal_code
+JOIN ex_orders AS o
+    ON c.customer_id = o.customer_id
+JOIN ex_transactions AS t
+    ON o.order_id = t.order_id
+WHERE o.order_status = 'delivered'
+GROUP BY ROLLUP(l.region, l.state, l.city);
+
+2. SELECT
+    l.region,
+    l.state,
+    l.city,
+    SUM(t.sales_amount) AS total_sales
+FROM ex_locations AS l
+JOIN ex_customers AS c
+    ON l.postal_code = c.postal_code
+JOIN ex_orders AS o
+    ON c.customer_id = o.customer_id
+JOIN ex_transactions AS t
+    ON o.order_id = t.order_id
+WHERE o.order_status = 'delivered'
+GROUP BY CUBE(l.region, l.state, l.city);
+
+3. SELECT
+    l.region,
+    l.state,
+    l.city,
+    SUM(t.sales_amount) AS total_sales
+FROM ex_locations AS l
+JOIN ex_customers AS c
+    ON l.postal_code = c.postal_code
+JOIN ex_orders AS o
+    ON c.customer_id = o.customer_id
+JOIN ex_transactions AS t
+    ON o.order_id = t.order_id
+WHERE o.order_status = 'delivered'
+GROUP BY GROUPING SETS
+(
+    (l.region, l.state, l.city),
+    (l.region, l.state),
+    (l.region),
+    ()
+);
+
+1.
+WITH subcategory_sales AS 
+(SELECT p.category, p.sub_category, SUM(t.sales_amount) AS sub_cat_sales
+FROM ex_orders AS o
+INNER JOIN ex_transactions AS t
+ON t.order_id = o.order_id
+INNER JOIN ex_products AS p
+ON p.product_id = t.product_id
+WHERE o.order_status NOT IN ('canceled', 'unavailable')
+GROUP BY p.category, p.sub_category)
+
+SELECT category, sub_category, sub_cat_sales,RANK() OVER (PARTITION BY category ORDER BY sub_cat_sales DESC) AS sub_cat_rank, ROUND(100.0 * sub_cat_sales / SUM(sub_cat_sales) OVER (PARTITION BY category), 2) AS sales_contribution_to_category, ROUND(100.0 * sub_cat_sales / SUM(sub_cat_sales) OVER (), 2) AS overall_sales_contribution
+FROM subcategory_sales
+ORDER BY category, sub_cat_rank;
+
+2.
+WITH subcategory_sales AS 
+(SELECT p.category, p.sub_category, SUM(t.sales_amount) AS sub_cat_sales
+FROM ex_orders o
+INNER JOIN ex_transactions t ON o.order_id = t.order_id
+INNER JOIN ex_products p ON t.product_id = p.product_id
+WHERE o.order_status NOT IN ('canceled', 'unavailable')
+GROUP BY p.category, p.sub_category), 
+
+contributions AS (SELECT category, sub_category, ROUND(100.0 * sub_cat_sales / SUM(sub_cat_sales) OVER (), 2) AS overall_sales_contribution
+FROM subcategory_sales)
+
+SELECT *
+FROM contributions
+WHERE overall_sales_contribution > 7;
+
+3.
+WITH subcategory_sales AS 
+(SELECT p.category, p.sub_category, SUM(t.sales_amount) AS sub_cat_sales
+FROM ex_orders o
+INNER JOIN ex_transactions t ON o.order_id = t.order_id
+INNER JOIN ex_products p ON t.product_id = p.product_id
+WHERE o.order_status NOT IN ('canceled', 'unavailable')
+GROUP BY p.category, p.sub_category),
+
+ranked_subcategories AS 
+(SELECT category, sub_category, RANK() OVER (PARTITION BY category ORDER BY sub_cat_sales DESC) AS sub_cat_rank 
+FROM subcategory_sales)
+
+SELECT *
+FROM ranked_subcategories
+WHERE sub_category = 'Machines';
