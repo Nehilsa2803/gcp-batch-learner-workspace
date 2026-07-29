@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Bug Hunter: The Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #cbd5e1;
+            --heading-color: #f8fafc;
+            --accent-color: #3b82f6; 
+            --card-bg: #1e293b;
+            --code-bg: #0b1120;
+            --border-color: #334155;
+            --highlight: #facc15;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+        }
+
+        body.light-mode {
+            --bg-color: #f8fafc;
+            --text-color: #334155;
+            --heading-color: #0f172a;
+            --card-bg: #ffffff;
+            --code-bg: #f1f5f9;
+            --border-color: #e2e8f0;
+            --highlight: #b45309;
+        }
+
+        * { box-sizing: border-box; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 2rem; overflow-x: hidden; user-select: none; }
+        
+        .floating-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1; opacity: 0.1; }
+        .floating-word { position: absolute; font-family: 'Fira Code', monospace; font-weight: 600; color: var(--accent-color); animation: floatUp linear infinite; }
+        @keyframes floatUp { 0% { transform: translateY(110vh) rotate(-10deg); } 100% { transform: translateY(-20vh) rotate(10deg); } }
+
+        .container { max-width: 1000px; margin: 0 auto; position: relative; z-index: 1; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem; }
+        h1 { font-size: 2.5rem; margin: 0; color: var(--heading-color); display: flex; align-items: center; gap: 0.75rem; text-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
+        
+        .score-board { display: flex; gap: 2rem; font-size: 1.2rem; font-weight: 800; background: var(--code-bg); padding: 1rem 2rem; border-radius: 999px; border: 2px solid var(--border-color); }
+        .score-hits { color: var(--success-color); }
+        .score-misses { color: var(--error-color); }
+
+        .query-page { display: none; animation: fadeIn 0.4s ease; }
+        .query-page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+        .game-card { background-color: var(--card-bg); border: 2px solid var(--border-color); border-radius: 16px; padding: 2.5rem; margin-bottom: 2rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
+        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .game-header h2 { margin: 0; color: var(--heading-color); font-size: 1.8rem; }
+        
+        .instruction { text-align: center; font-size: 1.1rem; color: var(--highlight); margin-bottom: 2rem; font-weight: 600; padding: 1rem; background: rgba(250, 204, 21, 0.1); border-radius: 8px; border: 1px dashed var(--highlight); }
+
+        .code-container { background-color: var(--code-bg); padding: 2rem; border-radius: 12px; font-family: 'Fira Code', monospace; font-size: 1.2rem; line-height: 1.8; color: var(--text-color); box-shadow: inset 0 2px 10px rgba(0,0,0,0.3); border: 1px solid var(--border-color); white-space: pre-wrap; cursor: crosshair; }
+        
+        .clickable-token { padding: 0.1rem 0.2rem; border-radius: 4px; transition: background-color 0.1s, transform 0.1s; }
+        .clickable-token:hover { background-color: rgba(255, 255, 255, 0.1); transform: scale(1.05); }
+        
+        /* Found bug styling */
+        .bug-found { background-color: rgba(16, 185, 129, 0.2) !important; border-bottom: 2px solid var(--success-color); color: var(--success-color); text-shadow: 0 0 8px rgba(16, 185, 129, 0.5); pointer-events: none; }
+        
+        .nav-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; }
+        .nav-btn { background-color: var(--accent-color); color: #fff; border: none; padding: 1rem 2rem; border-radius: 8px; font-size: 1.1rem; font-weight: 800; cursor: pointer; transition: transform 0.1s, filter 0.2s; box-shadow: 0 4px 0 #2563eb; }
+        .nav-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #2563eb; }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Explanations Area */
+        .found-bugs-area { margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+        .bug-explanation-card { background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--success-color); padding: 1rem 1.5rem; border-radius: 0 8px 8px 0; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        .bug-explanation-card strong { color: var(--success-color); display: block; font-size: 1.1rem; margin-bottom: 0.5rem; font-family: 'Fira Code', monospace; }
+
+        /* Animations */
+        .click-ripple { position: fixed; border-radius: 50%; transform: translate(-50%, -50%) scale(0); animation: ripple 0.6s ease-out forwards; pointer-events: none; z-index: 1000; width: 20px; height: 20px; }
+        .hit-ripple { border: 4px solid var(--success-color); background: rgba(16, 185, 129, 0.4); }
+        .miss-ripple { border: 4px solid var(--error-color); background: rgba(239, 68, 68, 0.4); }
+
+        @keyframes ripple {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(5); opacity: 0; border-width: 0px; }
+        }
+
+        .floating-text { position: fixed; font-weight: 900; font-size: 2rem; pointer-events: none; z-index: 1001; animation: floatUpText 1s ease forwards; transform: translate(-50%, -50%); }
+        .text-hit { color: var(--success-color); text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .text-miss { color: var(--error-color); text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        
+        @keyframes floatUpText {
+            0% { opacity: 1; margin-top: 0; }
+            100% { opacity: 0; margin-top: -50px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="floating-bg" id="floating-bg"></div>
+
+<div class="container">
+    <header>
+        <h1>🎮 Bug Hunter</h1>
+        <div class="score-board">
+            <div class="score-hits">🎯 Hits: <span id="hits-count">0</span></div>
+            <div class="score-misses">❌ Misses: <span id="misses-count">0</span></div>
+        </div>
+    </header>
+
+    <div class="instruction">
+        Objective: Read the query and CLICK on the exact word or clause where you think a bug exists!
+    </div>
+
+    <div id="pages-container"></div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">⬅️ PREVIOUS</button>
+        <h3 id="progress-text" style="color: var(--heading-color); margin: 0;">Level 1 of 10</h3>
+        <button class="nav-btn" id="next-btn" onclick="navigate(1)">NEXT LEVEL ➡️</button>
+    </div>
+</div>
+
+<script>
+    const queries = [
+        {
+            title: "1. The Aggregation Disaster",
+            code: `SELECT \n    department_id, \n    [[department_name|Missing from GROUP BY: department_name is selected but not aggregated or grouped.]], \n    SUM(salary) AS total_payroll,\n    [[COUNT(NULL)|Invalid COUNT: COUNT(NULL) always returns 0. Use COUNT(*).]] AS total_employees\nFROM [[employee EMP|Missing Table Alias: Columns in SELECT should use the 'EMP.' prefix to avoid ambiguity.]]\n[[WHERE SUM(salary) > 100000|Filtering on Aggregate: You cannot use aggregates in WHERE. Must use HAVING.]]\nGROUP BY department_id\n[[ORDER BY 5 DESC|Index Out of Bounds: The query only selects 4 columns, but attempts to order by the 5th.]]`
+        },
+        {
+            title: "2. The Accidental INNER JOIN",
+            code: `SELECT \n    e.first_name, \n    d.department_name\nFROM employees e\n[[LEFT JOIN departments d|Missing ON Clause: A JOIN must have an ON condition linking the tables.]]\nWHERE [[d.status|Accidental INNER JOIN: Filtering a LEFT JOIN's right table in the WHERE clause removes unmatched rows. Move to ON.]] = [["Active"|Invalid Quotes: String literals require single quotes 'Active', not double quotes.]]\nAND e.manager_id [[= NULL|Invalid NULL Check: Equality checks against NULL evaluate to unknown. Must use 'IS NULL'.]]\n[[GROUP BY e.employee_id|Invalid Grouping: Grouping by employee_id but selecting department_name without an aggregate.]]`
+        },
+        {
+            title: "3. The Subquery Sinkhole",
+            code: `SELECT \n    id,\n    name\nFROM (\n    SELECT id, name, salary \n    FROM staff \n    [[ORDER BY salary DESC|Useless ORDER BY: Ordering inside a subquery without a LIMIT is ignored by the engine.]]\n) [[ |Missing Alias: Every derived table in a FROM clause requires an alias (e.g., 'AS sub').]]\nWHERE dept_id [[IN|Multiple Columns in IN: Outer query checks one column, but the subquery returns two.]] (\n    SELECT id, [[department_name|Missing Column: dept_id is filtered on, but the subquery doesn't return dept_id.]] \n    FROM departments\n)`
+        },
+        {
+            title: "4. The CTE Catastrophe",
+            code: `WITH regional_sales AS (\n    SELECT region, SUM(sales) as total FROM sales\n    [[ |Missing GROUP BY: An aggregate SUM is used with 'region', so GROUP BY region is required.]]\n)[[ |Missing Comma: Multiple CTEs must be separated by a comma.]]\ntop_region AS (\n    SELECT region FROM regional_sales WHERE [[rank|Column Not Found: 'rank' was never selected or calculated in regional_sales.]] = 1\n)\nSELECT *\nFROM [[top_regions|Typo in CTE Reference: The CTE is named 'top_region' (singular), but queried as plural.]]`
+        },
+        {
+            title: "5. The Date Dilemma",
+            code: `SELECT \n    order_id, \n    [[EXTRACT(YEAR FROM '2023-05-12')|Extracting from String: '2023-05-12' is a string literal. It must be cast to a DATE first, or use a column name.]] AS order_year\nFROM orders\nWHERE order_date BETWEEN [['2023-12-31' AND '2023-01-01'|Reversed Bounds: BETWEEN requires the earlier date first. This will return 0 rows.]]\nGROUP BY [[YEAR(order_date)|Dialect Mixing: YEAR() is SQL Server, while EXTRACT() is Postgres/Standard. Inconsistent logic.]]\n[[HAVING count(*) = NULL|Invalid NULL Check: count(*) will never be NULL, and equality against NULL is invalid anyway.]]`
+        },
+        {
+            title: "6. The Set Operation Sabotage",
+            code: `SELECT first_name, last_name, 'Employee' AS role\nFROM employees\n[[ORDER BY last_name|Misplaced ORDER BY: You cannot ORDER BY the first query of a UNION. It must be placed at the very end.]]\n[[UNION ALL|Logical Error: If the goal is a distinct list of people, UNION ALL keeps duplicates.]]\nSELECT first_name, [[age|Mismatched Data Types: Selecting an integer (age) where the first query selected a string (last_name).]]\nFROM contractors`
+        },
+        {
+            title: "7. The String & NULL Nightmare",
+            code: `SELECT \n    [[first_name + last_name|String Concatenation: Standard SQL uses '||' or CONCAT() for strings, not '+'.]] AS "Full Name",\n    COALESCE(phone_number, email) [[= NULL|COALESCE Equality: You must use 'IS NULL', not '= NULL'.]] AS contact_missing,\n    CASE \n        WHEN status = 'Active' THEN [[1|Mismatched CASE Types: The first branch returns an Integer, the second returns a String ('Zero').]]\n        WHEN status = 'Inactive' THEN 'Zero'\n    [[AS status_code|Missing END: A CASE statement requires the END keyword before the alias.]]\nFROM users\nWHERE [[LIKE %smith%|Invalid LIKE Syntax: Missing a column to compare against, and missing single quotes around the pattern.]]`
+        },
+        {
+            title: "8. The Cross Join Confusion",
+            code: `SELECT \n    [[a.product_name|Invalid Alias: The table is aliased as 'p', but referenced as 'a'.]], \n    [[b.category_name|Invalid Alias: The table is aliased as 'c', but referenced as 'b'.]]\nFROM products p\nCROSS JOIN categories c\n[[ON p.category_id = c.id|Invalid ON Clause: CROSS JOINs produce cartesian products and natively do not take an ON condition.]]\nWHERE a.price [[!= NULL|Invalid NULL check: Must use IS NOT NULL.]]`
+        },
+        {
+            title: "9. The Logic & Filtering Tangle",
+            code: `SELECT \n    customer_id, \n    [[COALESCE(balance, 'Zero')|Mismatched Data Types: 'balance' is a number, but 'Zero' is a string. COALESCE arguments must be of the same type.]] AS current_balance\nFROM customers\nWHERE status = 'Active' [[OR|Missing Parentheses: AND evaluates before OR. You must wrap the OR conditions in parentheses so the subsequent logic applies to both.]] status = 'Pending'\nAND last_name [[LIKE '*smith*'|Invalid Wildcard: SQL uses '%' for any sequence of characters, not '*'.]]\nAND customer_id [[NOT IN|NULL Propagation Risk: If the subquery returns even a single NULL value, NOT IN will cause the entire outer query to return 0 rows.]] (\n    SELECT customer_id FROM suspended_accounts\n)\n[[HAVING balance > 500|Invalid HAVING: You cannot use HAVING without a GROUP BY. Use WHERE balance > 500 instead.]]`
+        },
+        {
+            title: "10. The Ultimate Boss Query",
+            code: `SELECT [[DISTINCT(u.id, u.email)|Invalid DISTINCT: DISTINCT is a clause, not a function. Do not wrap multiple columns in parentheses.]]\n    [[COUNT(DISTINCT o.order_id, o.product_id)|Multiple Columns in COUNT: You cannot count distinct across multiple columns unless you concatenate them first.]] AS total_items,\n    u.created_at AS [['Join Date'|Invalid Column Alias: Use double quotes "Join Date" for aliases with spaces. Single quotes denote string literals.]]\nFROM users u\nINNER JOIN orders o\n[[GROUP BY 1, 2|Invalid GROUP BY: Column 2 is an aggregate function. You cannot group by an aggregate.]]\n[[HAVING total_items > 0|Missing ON Clause: The INNER JOIN is missing an ON condition tying users and orders together.]]`
+        }
+    ];
+
+    let hits = 0;
+    let misses = 0;
+    let currentPage = 0;
+
+    function renderQueries() {
+        const container = document.getElementById('pages-container');
+        
+        queries.forEach((q, index) => {
+            const regex = /\[\[(.*?)\|(.*?)\]\]/g;
+            let codeHtml = '';
+            let lastIdx = 0;
+            let match;
+            
+            while ((match = regex.exec(q.code)) !== null) {
+                // Text before bug
+                let beforeText = q.code.substring(lastIdx, match.index);
+                codeHtml += parseSafeTokens(beforeText);
+                
+                // The Bug
+                let bugText = match[1];
+                let explanation = match[2];
+                codeHtml += `<span class="clickable-token bug-token" data-explanation="${explanation.replace(/"/g, '&quot;')}">${bugText === ' ' ? '&nbsp;&nbsp;&nbsp;' : bugText}</span>`;
+                
+                lastIdx = regex.lastIndex;
+            }
+            codeHtml += parseSafeTokens(q.code.substring(lastIdx));
+
+            let pageHtml = `
+                <div class="query-page ${index === 0 ? 'active' : ''}" id="page-${index}">
+                    <div class="game-card">
+                        <div class="game-header">
+                            <h2>${q.title}</h2>
+                        </div>
+                        <div class="code-container" onclick="handleCodeClick(event)">
+                            ${codeHtml}
+                        </div>
+                        <div class="found-bugs-area" id="bugs-area-${index}"></div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', pageHtml);
+        });
+    }
+
+    function parseSafeTokens(text) {
+        let tokens = text.split(/(\s+|[,;()=<>+*!]+)/);
+        let out = '';
+        tokens.forEach(t => {
+            if (t.trim() === '' || /^[,;()=<>+*!]+$/.test(t)) {
+                out += t; // Keep raw formatting and punctuation unclickable to reduce noise, or make them clickable too.
+            } else {
+                out += `<span class="clickable-token safe-token">${t}</span>`;
+            }
+        });
+        return out;
+    }
+
+    function handleCodeClick(event) {
+        if (!event.target.classList.contains('clickable-token')) return;
+        
+        const el = event.target;
+        const rect = el.getBoundingClientRect();
+        const x = event.clientX;
+        const y = event.clientY;
+
+        if (el.classList.contains('bug-token') && !el.classList.contains('bug-found')) {
+            // HIT!
+            el.classList.add('bug-found');
+            hits++;
+            document.getElementById('hits-count').innerText = hits;
+            
+            createRipple(x, y, 'hit-ripple');
+            createFloatingText(x, y, 'Busted! 🎯', 'text-hit');
+            
+            // Add explanation to area
+            const area = document.getElementById(`bugs-area-${currentPage}`);
+            const expText = el.getAttribute('data-explanation');
+            const [title, desc] = expText.split(': ');
+            
+            area.insertAdjacentHTML('beforeend', `
+                <div class="bug-explanation-card">
+                    <strong>🚫 ${title}</strong>
+                    ${desc || ''}
+                </div>
+            `);
+            
+        } else if (el.classList.contains('safe-token')) {
+            // MISS!
+            misses++;
+            document.getElementById('misses-count').innerText = misses;
+            createRipple(x, y, 'miss-ripple');
+            createFloatingText(x, y, 'Nope! ❌', 'text-miss');
+        }
+    }
+
+    function createRipple(x, y, className) {
+        const ripple = document.createElement('div');
+        ripple.className = `click-ripple ${className}`;
+        ripple.style.left = x + 'px';
+        ripple.style.right = y + 'px'; // Fix: should be top
+        ripple.style.top = y + 'px';
+        document.body.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+    }
+
+    function createFloatingText(x, y, text, className) {
+        const el = document.createElement('div');
+        el.className = `floating-text ${className}`;
+        el.innerText = text;
+        el.style.left = x + 'px';
+        el.style.top = (y - 20) + 'px';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1000);
+    }
+
+    function navigate(dir) {
+        document.getElementById(`page-${currentPage}`).classList.remove('active');
+        currentPage += dir;
+        document.getElementById(`page-${currentPage}`).classList.add('active');
+        document.getElementById('progress-text').innerText = `Level ${currentPage + 1} of 10`;
+        
+        document.getElementById('prev-btn').disabled = currentPage === 0;
+        document.getElementById('next-btn').disabled = currentPage === queries.length - 1;
+    }
+
+    // Init
+    renderQueries();
+
+    // Background
+    const sqlWords = ['DEBUG', 'SYNTAX', 'ERROR', 'NULL', 'LOGIC', 'JOIN', 'CTE'];
+    const bg = document.getElementById('floating-bg');
+    for (let i=0; i<15; i++) {
+        let w = document.createElement('div'); w.className = 'floating-word'; w.innerText = sqlWords[Math.floor(Math.random()*sqlWords.length)];
+        w.style.left = Math.random()*90 + 'vw'; w.style.fontSize = 1.5 + Math.random()*2 + 'rem';
+        w.style.animationDuration = 10 + Math.random()*15 + 's'; w.style.animationDelay = '-' + Math.random()*20 + 's';
+        bg.appendChild(w);
+    }
+</script>
+</body>
+</html>

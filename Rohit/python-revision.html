@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Core Revision</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        :root {
+            /* Light Theme Variables */
+            --bg-color-light: #f8fafc;
+            --text-color-light: #334155;
+            --sidebar-bg-light: rgba(255, 255, 255, 0.8);
+            --content-bg-light: rgba(248, 250, 252, 0.9);
+            --code-bg-light: #f1f5f9;
+            --card-bg-light: #ffffff;
+            --border-light: rgba(0, 0, 0, 0.1);
+            --heading-light: #0f172a;
+            --tab-hover-light: rgba(0, 0, 0, 0.05);
+
+            /* Dark Theme Variables */
+            --bg-color-dark: #0f172a;
+            --text-color-dark: #cbd5e1;
+            --sidebar-bg-dark: rgba(30, 41, 59, 0.7);
+            --content-bg-dark: rgba(15, 23, 42, 0.7);
+            --code-bg-dark: #1e293b;
+            --card-bg-dark: rgba(30, 41, 59, 0.5);
+            --border-dark: rgba(255, 255, 255, 0.1);
+            --heading-dark: #f8fafc;
+            --tab-hover-dark: rgba(255, 255, 255, 0.05);
+
+            /* Accents */
+            --primary-accent: #3b82f6;
+            --secondary-accent: #10b981;
+            --danger-accent: #ef4444;
+            --warning-accent: #f59e0b;
+        }
+
+        /* Apply theme based on attribute */
+        [data-theme="dark"] {
+            --bg-color: var(--bg-color-dark);
+            --text-color: var(--text-color-dark);
+            --sidebar-bg: var(--sidebar-bg-dark);
+            --content-bg: var(--content-bg-dark);
+            --code-bg: var(--code-bg-dark);
+            --card-bg: var(--card-bg-dark);
+            --border: var(--border-dark);
+            --heading: var(--heading-dark);
+            --tab-hover: var(--tab-hover-dark);
+        }
+
+        [data-theme="light"] {
+            --bg-color: var(--bg-color-light);
+            --text-color: var(--text-color-light);
+            --sidebar-bg: var(--sidebar-bg-light);
+            --content-bg: var(--content-bg-light);
+            --code-bg: var(--code-bg-light);
+            --card-bg: var(--card-bg-light);
+            --border: var(--border-light);
+            --heading: var(--heading-light);
+            --tab-hover: var(--tab-hover-light);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        [data-theme="dark"] body {
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+        }
+
+        [data-theme="light"] body {
+            background-image: none;
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-right: 1px solid var(--border);
+            transition: background 0.3s, border-right 0.3s;
+        }
+
+        /* Sidebar Tabs */
+        .sidebar {
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 0;
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .sidebar h1 {
+            font-size: 1.5rem;
+            margin: 0 0 1rem 0;
+            color: var(--heading);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: color 0.3s;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 4px;
+            cursor: pointer;
+            width: fit-content;
+        }
+        .theme-toggle span {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            border-radius: 16px;
+            transition: background 0.2s, color 0.2s;
+        }
+        [data-theme="dark"] .theme-dark { background: var(--primary-accent); color: white; }
+        [data-theme="light"] .theme-light { background: var(--primary-accent); color: white; }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            font-weight: 400;
+        }
+
+        .tab-btn:hover {
+            background: var(--tab-hover);
+            color: var(--heading);
+        }
+
+        .tab-btn.active {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--primary-accent);
+            font-weight: 600;
+            border-left: 4px solid var(--primary-accent);
+        }
+
+        /* Content Area */
+        .main-content {
+            flex: 1;
+            padding: 3rem;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+            color: var(--heading);
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-accent);
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        /* Challenge Cards */
+        .challenge-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: background 0.3s, border 0.3s;
+        }
+
+        .challenge-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .challenge-card.bug-bounty::before { background-color: var(--danger-accent); }
+        .challenge-card.guess-code::before { background-color: var(--warning-accent); }
+        .challenge-card.iteration-math::before { background-color: var(--primary-accent); }
+        .challenge-card.problem-statement::before { background-color: var(--secondary-accent); }
+
+        .challenge-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .challenge-card.bug-bounty .challenge-header { color: var(--danger-accent); }
+        .challenge-card.guess-code .challenge-header { color: var(--warning-accent); }
+        .challenge-card.iteration-math .challenge-header { color: var(--primary-accent); }
+        .challenge-card.problem-statement .challenge-header { color: var(--secondary-accent); }
+
+        /* Code Blocks */
+        pre {
+            background: var(--code-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+            transition: background 0.3s, border 0.3s;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            color: var(--heading);
+            font-size: 0.95rem;
+        }
+        
+        /* Inline code */
+        p code, li code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: var(--primary-accent);
+        }
+
+        ul, ol {
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            color: var(--text-color);
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Answer Reveal */
+        .answer-section {
+            margin-top: 1.5rem;
+        }
+
+        .reveal-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        [data-theme="light"] .reveal-btn {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .reveal-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        [data-theme="light"] .reveal-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .answer-content {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--secondary-accent);
+            border-radius: 0 8px 8px 0;
+            animation: fadeIn 0.3s ease forwards;
+            color: var(--text-color);
+        }
+        
+        .answer-content.show {
+            display: block;
+        }
+
+        /* Next Button */
+        .next-section {
+            margin-top: 3rem;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .next-btn {
+            background: var(--primary-accent);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+        }
+
+        .next-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(59, 130, 246, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar glass">
+        <div class="sidebar-header">
+            <h1>Python Revision</h1>
+            <div class="theme-toggle" onclick="toggleTheme()">
+                <span class="theme-light">Light</span>
+                <span class="theme-dark">Dark</span>
+            </div>
+        </div>
+        <button class="tab-btn active" onclick="openTab('tab-1', this)">1. Variables & Conditions</button>
+        <button class="tab-btn" onclick="openTab('tab-2', this)">2. Control Flow</button>
+        <button class="tab-btn" onclick="openTab('tab-3', this)">3. Loops & Iterables</button>
+        <button class="tab-btn" onclick="openTab('tab-4', this)">4. Data Structures</button>
+        <button class="tab-btn" onclick="openTab('tab-5', this)">5. Functions & Methods</button>
+        <button class="tab-btn" onclick="openTab('tab-6', this)">6. File I/O</button>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        
+        <!-- Tab 1: Variables, Operators & Conditions -->
+        <div id="tab-1" class="tab-pane active">
+            <h2>Variables, Operators & Conditions</h2>
+            <p>Welcome to the revision module. Let's refresh our memory on the absolute basics.</p>
+            
+            <h3>Key Concepts</h3>
+            <ul>
+                <li><strong>Variables:</strong> Dynamically typed in Python. No need to declare type.</li>
+                <li><strong>Operators:</strong> Arithmetic (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>//</code>, <code>%</code>, <code>**</code>), Logical (<code>and</code>, <code>or</code>, <code>not</code>).</li>
+                <li><strong>Chained Conditions:</strong> Python uniquely allows mathematical chaining like <code>0 &lt; x &lt; 10</code>.</li>
+            </ul>
+
+            <div class="challenge-card guess-code">
+                <div class="challenge-header">
+                    ⚡ Challenge: Guess the Code
+                </div>
+                <p>Analyze the execution cycle of the following code snippet. What will be the final output printed to the console?</p>
+<pre><code>x = 15
+y = 4
+z = x // y + x % y
+
+result = (z > 5) and (10 <= x < 20) or not (y == 4)
+
+print(f"Z is {z}, Result is {result}")</code></pre>
+                
+                <div class="answer-section">
+                    <button class="reveal-btn" onclick="toggleAnswer(this)">Reveal Answer</button>
+                    <div class="answer-content">
+                        <p><strong>Output:</strong> <code>Z is 6, Result is True</code></p>
+                        <p><strong>Execution Cycle:</strong></p>
+                        <ul>
+                            <li><code>x // y</code> is <code>15 // 4 = 3</code> (integer division).</li>
+                            <li><code>x % y</code> is <code>15 % 4 = 3</code> (remainder).</li>
+                            <li><code>z = 3 + 3 = 6</code>.</li>
+                            <li>Condition 1: <code>(z > 5)</code> &rarr; <code>(6 > 5)</code> &rarr; <code>True</code></li>
+                            <li>Condition 2: <code>(10 <= 15 < 20)</code> &rarr; <code>True</code></li>
+                            <li>Condition 3: <code>not (y == 4)</code> &rarr; <code>not True</code> &rarr; <code>False</code></li>
+                            <li>Evaluation: <code>True and True or False</code> &rarr; <code>True or False</code> &rarr; <code>True</code>.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="next-section">
+                <button class="next-btn" onclick="goToNextTab('tab-2', 1)">Next: Control Flow &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 2: Control Flow -->
+        <div id="tab-2" class="tab-pane">
+            <h2>Control Flow (If/Elif/Else)</h2>
+            <p>Control flow dictates how your program branches based on logical conditions.</p>
+            
+            <h3>Key Concepts</h3>
+            <ul>
+                <li>Python relies on <strong>indentation</strong> to define blocks of code, not curly braces <code>{}</code>.</li>
+                <li>An <code>if</code> block can be followed by zero or more <code>elif</code> blocks, and an optional <code>else</code> block at the end.</li>
+                <li>Only the <em>first</em> condition that evaluates to True will have its block executed.</li>
+            </ul>
+
+            <div class="challenge-card guess-code">
+                <div class="challenge-header">
+                    ⚡ Challenge: Guess the Output
+                </div>
+                <p>What will be the output of this grading script if the score is 85?</p>
+<pre><code>score = 85
+
+if score >= 90:
+print("Grade A")
+elif score >= 70:
+    print("Grade C")
+elif score >= 80:
+    print("Grade B")
+else
+    print("Fail")</code></pre>
+                
+                <div class="answer-section">
+                    <button class="reveal-btn" onclick="toggleAnswer(this)">Reveal Answer</button>
+                    <div class="answer-content">
+                        <p><strong>Surprise! This code actually won't run.</strong></p>
+                        <p>If you guessed "Grade C", you fell for the trap! Here is why it fails:</p>
+                        <ol>
+                            <li><strong>Syntax Error:</strong> The <code>print("Grade A")</code> is not indented.</li>
+                            <li><strong>Syntax Error:</strong> Missing colon <code>:</code> after the <code>else</code> keyword.</li>
+                        </ol>
+                        <p>Even if you fix the syntax, there's a <strong>Logical Flaw</strong>: The order of <code>elif</code> statements is wrong. A score of <code>85</code> triggers <code>score >= 70</code> and prints "Grade C", completely bypassing the <code>score >= 80</code> check. Conditions should be ordered from most specific/highest to lowest!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="next-section">
+                <button class="next-btn" onclick="goToNextTab('tab-3', 2)">Next: Loops & Iterables &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 3: Loops and Iterables -->
+        <div id="tab-3" class="tab-pane">
+            <h2>Loops and Iterables</h2>
+            <p>Loops allow us to execute a block of code multiple times.</p>
+
+            <h3>Key Concepts</h3>
+            <ul>
+                <li><strong>For loops:</strong> Used for iterating over a sequence (like a list, tuple, dictionary, set, or string).</li>
+                <li><strong>While loops:</strong> Execute as long as a condition is true.</li>
+                <li><strong>Iterables:</strong> Objects capable of returning their members one at a time.</li>
+            </ul>
+
+            <div class="challenge-card iteration-math">
+                <div class="challenge-header">
+                    🔢 Challenge: Iteration Math
+                </div>
+                <p>Do the math! How many times will the string "Processing..." be printed?</p>
+<pre><code>counter = 10
+iterations = 0
+
+while counter > 0:
+    print("Processing...")
+    iterations += 1
+    
+    if counter % 2 == 0:
+        counter = counter - 3
+    else:
+        counter = counter + 1
+</code></pre>
+                
+                <div class="answer-section">
+                    <button class="reveal-btn" onclick="toggleAnswer(this)">Reveal Answer</button>
+                    <div class="answer-content">
+                        <p><strong>Output:</strong> The loop runs exactly <strong>9</strong> times.</p>
+                        <p><strong>The Math Trace:</strong></p>
+                        <ul>
+                            <li><strong>Iter 1:</strong> c=10 (even) &rarr; c=7</li>
+                            <li><strong>Iter 2:</strong> c=7 (odd) &rarr; c=8</li>
+                            <li><strong>Iter 3:</strong> c=8 (even) &rarr; c=5</li>
+                            <li><strong>Iter 4:</strong> c=5 (odd) &rarr; c=6</li>
+                            <li><strong>Iter 5:</strong> c=6 (even) &rarr; c=3</li>
+                            <li><strong>Iter 6:</strong> c=3 (odd) &rarr; c=4</li>
+                            <li><strong>Iter 7:</strong> c=4 (even) &rarr; c=1</li>
+                            <li><strong>Iter 8:</strong> c=1 (odd) &rarr; c=2</li>
+                            <li><strong>Iter 9:</strong> c=2 (even) &rarr; c=-1</li>
+                            <li><strong>End:</strong> -1 > 0 is False. Loop terminates.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="challenge-card guess-code">
+                <div class="challenge-header">
+                    ⚡ Challenge: The Break/Continue Trap
+                </div>
+                <p>What will be the final value of <code>total</code> after this loop finishes?</p>
+<pre><code>total = 0
+for i in range(1, 6):
+    if i == 3:
+        continue
+    if i == 5:
+        break
+    total += i
+</code></pre>
+                
+                <div class="answer-section">
+                    <button class="reveal-btn" onclick="toggleAnswer(this)">Reveal Answer</button>
+                    <div class="answer-content">
+                        <p><strong>Output:</strong> <code>total</code> will be <strong>7</strong>.</p>
+                        <p><strong>The Execution Trace:</strong></p>
+                        <ul>
+                            <li><code>range(1, 6)</code> generates numbers 1, 2, 3, 4, 5.</li>
+                            <li><code>i = 1</code>: total = 0 + 1 = 1</li>
+                            <li><code>i = 2</code>: total = 1 + 2 = 3</li>
+                            <li><code>i = 3</code>: <code>continue</code> triggers. The loop skips the rest of the code and goes to the next iteration.</li>
+                            <li><code>i = 4</code>: total = 3 + 4 = 7</li>
+                            <li><code>i = 5</code>: <code>break</code> triggers. The loop immediately terminates before adding to total.</li>
+                            <li>Final total = 7.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="challenge-card iteration-math">
+                <div class="challenge-header">
+                    🔢 Challenge: Nested Loop Math
+                </div>
+                <p>How many times will "Inner" be printed?</p>
+<pre><code>outer_count = 3
+inner_count = 4
+
+for i in range(outer_count):
+    for j in range(1, inner_count):
+        print("Inner")
+</code></pre>
+                
+                <div class="answer-section">
+                    <button class="reveal-btn" onclick="toggleAnswer(this)">Reveal Answer</button>
+                    <div class="answer-content">
+                        <p><strong>Output:</strong> "Inner" prints exactly <strong>9</strong> times.</p>
+                        <p><strong>The Math Trace:</strong></p>
+                        <ul>
+                            <li>The outer loop runs 3 times (for <code>i</code> = 0, 1, 2).</li>
+                            <li>The inner loop runs for <code>j</code> in <code>range(1, 4)</code>. Note that <code>range(1, 4)</code> generates numbers 1, 2, 3 (which is exactly 3 times).</li>
+                            <li>Total iterations = Outer (3) × Inner (3) = <strong>9</strong>.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="next-section">
+                <button class="next-btn" onclick="goToNextTab('tab-4', 3)">Next: Basic Data Structures &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 4: Basic Data Structures -->
+        <div id="tab-4" class="tab-pane">
+            <h2>Basic Data Structures & Mutability</h2>
+            
+            <h3>Key Concepts</h3>
+            <ul>
+                <li><strong>List:</strong> Ordered, mutable. <code>[1, 2, 3]</code></li>
+                <li><strong>Tuple:</strong> Ordered, <em>immutable</em>. <code>(1, 2, 3)</code></li>
+                <li><strong>Set:</strong> Unordered, unique items. <code>{1, 2, 3}</code></li>
+                <li><strong>Dictionary:</strong> Key-value pairs. <code>{'a': 1}</code></li>
+                <li><strong>Mutable:</strong> Can be changed in place (lists, dicts, sets).</li>
+                <li><strong>Immutable:</strong> Cannot be changed after creation (strings, tuples, ints).</li>
+            </ul>
+
+            <div class="challenge-card bug-bounty">
+                <div class="challenge-header">
+                    🐛 Challenge: Bug Bounty
+                </div>
+                <p>Find the issues in this code snippet dealing with data structures.</p>
+<pre><code># Task: Add an item to the data and create a backup
+
+my_data = (1, 2, 3)
+my_data[0] = 10
+
+backup_data = my_data
+backup_data.append(4)
+
+print(my_data)</code></pre>
+                
+                <div class="answer-section">
+                    <button class="reveal-btn" onclick="toggleAnswer(this)">Reveal Answer</button>
+                    <div class="answer-content">
+                        <p><strong>The Bugs:</strong></p>
+                        <ol>
+                            <li><code>my_data = (1, 2, 3)</code> creates a <strong>Tuple</strong>, which is immutable.</li>
+                            <li><code>my_data[0] = 10</code> will throw a <code>TypeError: 'tuple' object does not support item assignment</code>.</li>
+                            <li><code>backup_data.append(4)</code> will fail because tuples do not have an <code>append</code> method.</li>
+                            <li><em>Conceptually (if my_data was a list):</em> <code>backup_data = my_data</code> does not create a backup; it creates an <strong>alias</strong> pointing to the exact same list in memory. Modifying <code>backup_data</code> would modify <code>my_data</code>. You need <code>my_data.copy()</code> or <code>list(my_data)</code> to create an actual backup.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div class="next-section">
+                <button class="next-btn" onclick="goToNextTab('tab-5', 4)">Next: Functions & Methods &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 5: Functions & Methods -->
+        <div id="tab-5" class="tab-pane">
+            <h2>Functions & Common Methods</h2>
+            <p>Functions encapsulate logic for reuse. Methods are functions that belong to objects.</p>
+
+            <div class="challenge-card problem-statement">
+                <div class="challenge-header">
+                    🛠️ Challenge: Function Selection
+                </div>
+                <p><strong>Problem Statement:</strong> You are given a large string of comma-separated email addresses. You need to:</p>
+                <ol>
+                    <li>Break the string into individual emails.</li>
+                    <li>Ensure there are no duplicates.</li>
+                    <li>Return them as a sorted list.</li>
+                </ol>
+                <p>What specific Python built-in functions, data structures, and string methods would you use to achieve this efficiently?</p>
+                
+                <div class="answer-section">
+                    <button class="reveal-btn" onclick="toggleAnswer(this)">Reveal Answer</button>
+                    <div class="answer-content">
+                        <p><strong>The Solution Approach:</strong></p>
+                        <ul>
+                            <li><strong><code>.split(',')</code></strong> : String method to break the comma-separated string into a list of individual email strings.</li>
+                            <li><strong><code>set()</code></strong> : Pass the list into a set to automatically remove all duplicate emails.</li>
+                            <li><strong><code>sorted()</code></strong> : Pass the set into the built-in <code>sorted()</code> function. This will sort the elements alphabetically and return a new <strong>list</strong>.</li>
+                        </ul>
+                        <p><strong>Code Example:</strong></p>
+                        <pre><code>def process_emails(email_string):
+    return sorted(set(email_string.split(',')))</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="next-section">
+                <button class="next-btn" onclick="goToNextTab('tab-6', 5)">Next: File I/O &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 6: File I/O -->
+        <div id="tab-6" class="tab-pane">
+            <h2>File I/O</h2>
+            <p>Interacting with the filesystem is a critical skill for data processing.</p>
+
+            <h3>Key Concepts</h3>
+            <ul>
+                <li>Always use the <code>with open() as f:</code> context manager to ensure files are properly closed.</li>
+                <li>Modes: <code>'r'</code> (read), <code>'w'</code> (write - overwrites), <code>'a'</code> (append).</li>
+            </ul>
+
+            <div class="challenge-card guess-code">
+                <div class="challenge-header">
+                    ⚡ Challenge: Guess the Output
+                </div>
+                <p>Assuming <code>log.txt</code> currently contains the text <code>"Session Start\n"</code>, what will be the exact contents of the file after running this script?</p>
+<pre><code>with open('log.txt', 'w') as file:
+    file.write("Error: Invalid Input\n")
+
+with open('log.txt', 'a') as file:
+    file.write("Session End\n")</code></pre>
+                
+                <div class="answer-section">
+                    <button class="reveal-btn" onclick="toggleAnswer(this)">Reveal Answer</button>
+                    <div class="answer-content">
+                        <p><strong>File Contents:</strong></p>
+<pre><code>Error: Invalid Input
+Session End</code></pre>
+                        <p><strong>Why?</strong></p>
+                        <ul>
+                            <li>The first <code>open(..., 'w')</code> uses write mode. This completely <strong>overwrites</strong> the existing file, destroying <code>"Session Start\n"</code> and replacing it with <code>"Error: Invalid Input\n"</code>.</li>
+                            <li>The second <code>open(..., 'a')</code> uses append mode, which adds <code>"Session End\n"</code> to the end of the current contents.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="next-section" style="justify-content: center;">
+                <p style="color: var(--secondary-accent); font-weight: 600;">🎉 You've completed the revision module!</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript for Interactivity -->
+    <script>
+        // Theme Toggle Logic
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+        }
+
+        // Tab switching logic
+        function openTab(tabId, btnElement) {
+            // Hide all tab panes
+            const panes = document.querySelectorAll('.tab-pane');
+            panes.forEach(pane => {
+                pane.classList.remove('active');
+            });
+
+            // Remove active class from all buttons
+            const btns = document.querySelectorAll('.tab-btn');
+            btns.forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab pane and set active button
+            document.getElementById(tabId).classList.add('active');
+            
+            // If function called by the Next button, btnElement is null, so we find the button manually
+            if (btnElement) {
+                btnElement.classList.add('active');
+            } else {
+                // Find button by index
+                const tabIndex = parseInt(tabId.split('-')[1]) - 1;
+                btns[tabIndex].classList.add('active');
+            }
+        }
+
+        function goToNextTab(tabId, currentIndex) {
+            openTab(tabId, null);
+        }
+
+        // Toggle Answer Reveal
+        function toggleAnswer(btn) {
+            const answerContent = btn.nextElementSibling;
+            if (answerContent.classList.contains('show')) {
+                answerContent.classList.remove('show');
+                btn.textContent = 'Reveal Answer';
+                btn.style.background = 'rgba(255, 255, 255, 0.1)';
+            } else {
+                answerContent.classList.add('show');
+                btn.textContent = 'Hide Answer';
+                btn.style.background = 'var(--secondary-accent)';
+            }
+        }
+    </script>
+</body>
+</html>

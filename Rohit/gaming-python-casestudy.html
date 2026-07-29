@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaming Python Case Study</title>
+    <!-- Pyodide for in-browser Python execution -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code&display=swap');
+        
+        :root {
+            /* Light Theme */
+            --bg-light: #f8fafc;
+            --text-light: #1e293b;
+            --sidebar-bg-light: #ffffff;
+            --card-bg-light: #ffffff;
+            --border-light: #e2e8f0;
+            --primary-light: #8b5cf6; /* Purple accent for gaming */
+            --code-bg-light: #f1f5f9;
+            --console-bg-light: #ffffff;
+            --console-text-light: #047857;
+            
+            /* Dark Theme */
+            --bg-dark: #0f172a;
+            --text-dark: #e2e8f0;
+            --sidebar-bg-dark: #1e293b;
+            --card-bg-dark: #1e293b;
+            --border-dark: #334155;
+            --primary-dark: #a78bfa; /* Light purple accent for gaming */
+            --code-bg-dark: #0f172a;
+            --console-bg-dark: #000000;
+            --console-text-dark: #10b981;
+        }
+
+        [data-theme="light"] {
+            --bg: var(--bg-light);
+            --text: var(--text-light);
+            --sidebar-bg: var(--sidebar-bg-light);
+            --card-bg: var(--card-bg-light);
+            --border: var(--border-light);
+            --primary: var(--primary-light);
+            --code-bg: var(--code-bg-light);
+            --console-bg: var(--console-bg-light);
+            --console-text: var(--console-text-light);
+        }
+
+        [data-theme="dark"] {
+            --bg: var(--bg-dark);
+            --text: var(--text-dark);
+            --sidebar-bg: var(--sidebar-bg-dark);
+            --card-bg: var(--card-bg-dark);
+            --border: var(--border-dark);
+            --primary: var(--primary-dark);
+            --code-bg: var(--code-bg-dark);
+            --console-bg: var(--console-bg-dark);
+            --console-text: var(--console-text-dark);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .header h1 { font-size: 1.2rem; margin: 0 0 1rem 0; }
+
+        .theme-toggle {
+            display: inline-flex;
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+        .theme-toggle span { padding: 4px 10px; font-size: 0.8rem; }
+        [data-theme="dark"] .theme-dark { background: var(--primary); color: #000; font-weight: bold; }
+        [data-theme="light"] .theme-light { background: var(--primary); color: white; font-weight: bold; }
+
+        .btn-global-submit {
+            width: 100%;
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-global-submit:hover { opacity: 0.9; }
+
+        .nav-items { flex: 1; padding: 1rem 0; }
+        .nav-btn {
+            width: 100%;
+            text-align: left;
+            padding: 0.8rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .nav-btn:hover { background: rgba(128,128,128,0.1); }
+        .nav-btn.active {
+            border-left: 4px solid var(--primary);
+            background: rgba(128,128,128,0.1);
+            font-weight: 600;
+        }
+
+        /* Main Area */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .loading-overlay.hidden { display: none; }
+
+        .context-box {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--primary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .context-box h3 { margin-top: 0; color: var(--primary); }
+
+        .question-pane { display: none; }
+        .question-pane.active { display: block; }
+        
+        .question-pane h2 { margin-top: 0; }
+        .desc { margin-bottom: 1.5rem; line-height: 1.5; }
+
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            background: var(--code-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            resize: vertical;
+        }
+
+        .controls { display: flex; gap: 1rem; }
+        button {
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        .btn-run { background: var(--primary); color: white; }
+
+        .console {
+            background: var(--console-bg);
+            color: var(--console-text);
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            min-height: 100px;
+            white-space: pre-wrap;
+            border: 1px solid var(--border);
+            margin-top: 1rem;
+            overflow-x: auto;
+        }
+        
+        .error-text { color: #ef4444 !important; }
+        
+        .global-solution-msg {
+            display: none;
+            padding: 1.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            border-radius: 6px;
+            margin-top: 2rem;
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="loading-overlay" id="loading">
+        <h2>Loading Python Environment (Pyodide)...</h2>
+        <p>This may take a few seconds on first load.</p>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="header">
+            <h1>Gaming Python Case Study</h1>
+            <div class="theme-toggle" onclick="toggleTheme()">
+                <span class="theme-light">Light</span>
+                <span class="theme-dark">Dark</span>
+            </div>
+            <button class="btn-global-submit" onclick="submitAssessment()">✓ Submit Assessment</button>
+        </div>
+        <div class="nav-items" id="nav-container">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main" id="main-container">
+        
+        <div class="context-box">
+            <h3>Assessment Context</h3>
+            <p>You are a data engineer for a popular multiplayer game. The dataset consists of two DataFrames already loaded in your environment:</p>
+            <ul>
+                <li><code>players_df</code>: Contains player information. (Columns: <code>player_id, username, region, level</code>)</li>
+                <li><code>sessions_df</code>: Contains game session logs. (Columns: <code>session_id, player_id, date, duration_mins, xp_gained</code>)</li>
+            </ul>
+            <p>You can run your code directly. The global state is shared across questions. Use <code>print()</code> to output your results.</p>
+        </div>
+
+        <div id="questions-container"></div>
+        <div class="global-solution-msg" id="global-msg">
+            Assessment Submitted! Your full solution report has been downloaded.
+        </div>
+    </div>
+
+    <script>
+        // --- Central Python Setup Code ---
+        const pythonSetupCode = `
+import pandas as pd
+import numpy as np
+import datetime
+
+# Create Global players_df
+players_data = {
+    'player_id': [101, 102, 103, 104, 105],
+    'username': ['bot_alpha', 'ProSniper99', 'bot_beta', 'NoobMaster', 'epic_gamer'],
+    'region': ['NA', 'EU', 'NA', 'EU', 'ASIA'],
+    'level': [5, 99, 3, 15, 42]
+}
+players_df = pd.DataFrame(players_data)
+
+# Create Global sessions_df
+sessions_data = {
+    'session_id': ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'],
+    'player_id': [102, 104, 102, 105, 103, 105],
+    'date': ['2023-10-01', '2023-10-01', '2023-10-02', '2023-10-02', '2023-10-03', '2023-10-03'],
+    'duration_mins': [120, 45, 150, 300, 15, 60],
+    'xp_gained': [1500, 450, 1800, np.nan, 100, np.nan]
+}
+sessions_df = pd.DataFrame(sessions_data)
+`;
+
+        // --- Questions Data ---
+        const questions = [
+            {
+                id: 1,
+                title: "1. List Comprehension",
+                desc: "We need to filter out bot accounts. Extract a list of all usernames from `players_df`. Then, use a **List Comprehension** to create a new list `real_players` that only contains usernames that do NOT start with 'bot_'. Print the result.",
+                setupCode: `# You can use players_df here\nusername_list = players_df['username'].tolist()\n\n# Write your code here:\n`,
+                solutionCode: `real_players = [u for u in username_list if not u.startswith('bot_')]\nprint(real_players)`
+            },
+            {
+                id: 2,
+                title: "2. Pandas Basics",
+                desc: "Filter `sessions_df` to find all hardcore sessions where `duration_mins` is strictly greater than 100. Print the resulting dataframe.",
+                setupCode: `# Write your code here:\n`,
+                solutionCode: `hardcore_sessions = sessions_df[sessions_df['duration_mins'] > 100]\nprint(hardcore_sessions)`
+            },
+            {
+                id: 3,
+                title: "3. Pandas Grouping",
+                desc: "Calculate the total `duration_mins` played by each `player_id`. Print the aggregated result.",
+                setupCode: `# Write your code here:\n`,
+                solutionCode: `duration_by_player = sessions_df.groupby('player_id')['duration_mins'].sum()\nprint(duration_by_player)`
+            },
+            {
+                id: 4,
+                title: "4. Pandas Joining",
+                desc: "Merge `sessions_df` with `players_df` on the `player_id` column using an inner join to see which region played each session. Print the first few rows using `.head()`.",
+                setupCode: `# Write your code here:\n`,
+                solutionCode: `merged_df = pd.merge(sessions_df, players_df, on='player_id', how='inner')\nprint(merged_df.head())`
+            },
+            {
+                id: 5,
+                title: "5. Function Apply",
+                desc: "Write a Python function `calculate_bonus(duration)` that returns 'High' if duration is > 60, and 'Low' otherwise. Apply this to the `duration_mins` column to create a new column `engagement_tier`. Print the dataframe.",
+                setupCode: `# Write your code here:\n`,
+                solutionCode: `def calculate_bonus(duration):\n    return 'High' if duration > 60 else 'Low'\n\nsessions_df['engagement_tier'] = sessions_df['duration_mins'].apply(calculate_bonus)\nprint(sessions_df)`
+            },
+            {
+                id: 6,
+                title: "6. Data Cleaning",
+                desc: "Some sessions crashed, resulting in missing `xp_gained` values (NaN). Fill these missing values with `0` in-place. Print the dataframe to verify.",
+                setupCode: `# Write your code here:\n`,
+                solutionCode: `sessions_df['xp_gained'] = sessions_df['xp_gained'].fillna(0)\nprint(sessions_df)`
+            },
+            {
+                id: 7,
+                title: "7. String Manipulation",
+                desc: "Make the `username` column in `players_df` uppercase for better display in the UI. Modify the column and print `players_df`.",
+                setupCode: `# Write your code here:\n`,
+                solutionCode: `players_df['username'] = players_df['username'].str.upper()\nprint(players_df)`
+            },
+            {
+                id: 8,
+                title: "8. Time Series / Dates",
+                desc: "Convert the `date` column in `sessions_df` into proper datetime objects. Then, extract the month into a new column called `month`. Print `sessions_df`.",
+                setupCode: `# Write your code here:\n`,
+                solutionCode: `sessions_df['date'] = pd.to_datetime(sessions_df['date'])\nsessions_df['month'] = sessions_df['date'].dt.month\nprint(sessions_df)`
+            }
+        ];
+
+        // --- UI Initialization ---
+        const navContainer = document.getElementById('nav-container');
+        const questionsContainer = document.getElementById('questions-container');
+
+        questions.forEach((q, index) => {
+            // Nav Button
+            const btn = document.createElement('button');
+            btn.className = `nav-btn ${index === 0 ? 'active' : ''}`;
+            btn.innerText = q.title;
+            btn.onclick = () => switchTab(index);
+            navContainer.appendChild(btn);
+
+            // Pane
+            const pane = document.createElement('div');
+            pane.className = `question-pane ${index === 0 ? 'active' : ''}`;
+            pane.id = `pane-${index}`;
+            
+            pane.innerHTML = `
+                <h2>${q.title}</h2>
+                <div class="desc">${q.desc}</div>
+                <div class="editor-container">
+                    <textarea id="code-${index}" spellcheck="false">${q.setupCode.replace(/\\n/g, '\n')}</textarea>
+                    <div class="controls">
+                        <button class="btn-run" onclick="executePython(${index})">▶ Run Code</button>
+                    </div>
+                </div>
+                <div class="console" id="console-${index}">Output will appear here...</div>
+            `;
+            questionsContainer.appendChild(pane);
+        });
+
+        function switchTab(index) {
+            document.querySelectorAll('.nav-btn').forEach((b, i) => b.classList.toggle('active', i === index));
+            document.querySelectorAll('.question-pane').forEach((p, i) => p.classList.toggle('active', i === index));
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        }
+
+        // --- Pyodide Integration ---
+        let pyodideReadyPromise;
+
+        async function initPyodide() {
+            try {
+                let pyodide = await loadPyodide();
+                await pyodide.loadPackage("pandas");
+                
+                // Initialize global state with the shared DataFrames
+                await pyodide.runPythonAsync(pythonSetupCode);
+                
+                document.getElementById('loading').classList.add('hidden');
+                return pyodide;
+            } catch (err) {
+                document.getElementById('loading').innerHTML = `<h2>Error loading Python</h2><p>${err}</p>`;
+            }
+        }
+        
+        window.onload = () => {
+            pyodideReadyPromise = initPyodide();
+        };
+
+        async function executePython(index) {
+            const consoleEl = document.getElementById(`console-${index}`);
+            consoleEl.innerText = "Running...";
+            consoleEl.classList.remove('error-text');
+            
+            const code = document.getElementById(`code-${index}`).value;
+            let pyodide = await pyodideReadyPromise;
+
+            // Python wrapper to catch stdout and evaluate last expression
+            const wrapperCode = `
+import sys
+import io
+import ast
+
+code_str = ${JSON.stringify(code)}
+sys.stdout = io.StringIO()
+result_expr = None
+output = ""
+
+try:
+    parsed = ast.parse(code_str)
+    if parsed.body:
+        last = parsed.body[-1]
+        if isinstance(last, ast.Expr):
+            parsed.body = parsed.body[:-1]
+            exec(compile(parsed, filename="<ast>", mode="exec"), globals())
+            result_expr = eval(compile(ast.Expression(last.value), filename="<ast>", mode="eval"), globals())
+        else:
+            exec(compile(parsed, filename="<ast>", mode="exec"), globals())
+            
+    output = sys.stdout.getvalue()
+    if result_expr is not None:
+        if output and not output.endswith("\\n"):
+            output += "\\n"
+        output += str(result_expr)
+        
+except Exception as e:
+    import traceback
+    output = traceback.format_exc()
+finally:
+    # Reset stdout
+    sys.stdout = sys.__stdout__
+
+output
+`;
+            try {
+                let result = await pyodide.runPythonAsync(wrapperCode);
+                
+                if (result.includes("Traceback (most recent call last)")) {
+                    consoleEl.classList.add('error-text');
+                }
+                consoleEl.innerText = result || "(No output)";
+                
+            } catch (err) {
+                consoleEl.classList.add('error-text');
+                consoleEl.innerText = err;
+            }
+        }
+
+        function submitAssessment() {
+            let fileContent = "===========================================\n";
+            fileContent += "GAMING PYTHON ASSESSMENT SOLUTION REPORT\n";
+            fileContent += "===========================================\n\n";
+            
+            questions.forEach((q, index) => {
+                const userCode = document.getElementById(`code-${index}`).value;
+                const setupLines = q.setupCode.replace(/\\n/g, '\n').trim();
+                
+                let feedback = "Great attempt! Compare your logic with the expected solution.";
+                if (userCode.trim() === setupLines) {
+                    feedback = "It looks like you didn't write any code for this question!";
+                }
+
+                fileContent += `--- QUESTION ${q.id}: ${q.title} ---\n`;
+                fileContent += `[YOUR CODE]\n${userCode}\n\n`;
+                fileContent += `[EXPECTED SOLUTION]\n${q.solutionCode.replace(/\\n/g, '\n')}\n\n`;
+                fileContent += `[FEEDBACK]\n${feedback}\n`;
+                fileContent += `\n===========================================\n\n`;
+            });
+
+            document.getElementById('global-msg').style.display = 'block';
+            
+            const blob = new Blob([fileContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = "Assessment-solutions-gaming.txt";
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        }
+    </script>
+</body>
+</html>

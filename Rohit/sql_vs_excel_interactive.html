@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL vs Excel: Interactive Lecture</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #cbd5e1;
+            --heading-color: #f8fafc;
+            --accent-color: #38bdf8;
+            --accent-hover: #0284c7;
+            --card-bg: #1e293b;
+            --card-back-bg: #0ea5e9;
+            --card-back-text: #ffffff;
+            --border-color: #334155;
+            --excel-color: #10b981;
+            --sql-color: #3b82f6;
+        }
+
+        body.light-mode {
+            --bg-color: #f0f9ff;
+            --text-color: #334155;
+            --heading-color: #0f172a;
+            --accent-color: #0ea5e9;
+            --accent-hover: #0284c7;
+            --card-bg: #ffffff;
+            --card-back-bg: #0ea5e9;
+            --card-back-text: #ffffff;
+            --border-color: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 2rem; overflow-x: hidden; }
+
+        .container { max-width: 1000px; margin: 0 auto; position: relative; z-index: 1; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem; }
+        h1 { font-size: 2.2rem; margin: 0; color: var(--heading-color); font-weight: 700; }
+        .theme-toggle { background-color: var(--card-bg); border: 2px solid var(--border-color); color: var(--text-color); padding: 0.5rem 1rem; border-radius: 999px; cursor: pointer; font-weight: 600; font-family: 'Outfit', sans-serif; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .theme-toggle:hover { border-color: var(--accent-color); }
+
+        .page { display: none; animation: fadeIn 0.5s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .intro-text { text-align: center; font-size: 1.2rem; margin-bottom: 3rem; line-height: 1.6; }
+
+        /* Grid for Flip Cards */
+        .persona-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 3rem; }
+        
+        .flip-card { background-color: transparent; height: 260px; perspective: 1000px; cursor: pointer; }
+        .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
+        .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+        
+        .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 16px; padding: 2rem; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        
+        .flip-card-front { background-color: var(--card-bg); border: 2px solid var(--border-color); }
+        .icon { font-size: 4rem; margin-bottom: 1rem; }
+        .flip-card-front h3 { margin: 0; color: var(--heading-color); font-size: 1.2rem; }
+        .click-hint { font-size: 0.8rem; color: var(--accent-color); margin-top: 1rem; font-weight: 600; }
+
+        .flip-card-back { background-color: var(--card-back-bg); color: var(--card-back-text); transform: rotateY(180deg); border: none; }
+        .flip-card-back p { margin: 0; font-size: 1rem; line-height: 1.5; font-weight: 500; }
+        .flip-card-back ul { text-align: left; margin: 1rem 0 0 0; padding-left: 1.5rem; font-weight: 600; }
+        .flip-card-back li { margin-bottom: 0.5rem; }
+
+        /* KPI Task Grid */
+        .kpi-domain-card { background-color: var(--card-bg); border: 2px dashed var(--accent-color); border-radius: 16px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .kpi-domain-card:hover { background-color: rgba(56, 189, 248, 0.05); transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .kpi-domain-card.revealed { border-style: solid; background-color: var(--card-bg); cursor: default; transform: none; }
+        
+        .domain-title { font-size: 1.5rem; color: var(--heading-color); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; }
+        .kpi-list { display: none; text-align: left; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); }
+        .kpi-domain-card.revealed .kpi-list { display: block; animation: fadeIn 0.4s ease; }
+        .kpi-list ul { padding-left: 1.5rem; margin: 0; color: var(--text-color); font-size: 1.1rem; line-height: 1.6; }
+        .kpi-list li { margin-bottom: 0.5rem; }
+
+        /* Comparison Grid */
+        .comparison-grid { display: flex; flex-direction: column; gap: 1rem; }
+        .compare-box { background-color: var(--card-bg); border: 2px solid var(--border-color); border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .compare-box:hover { transform: translateX(5px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.15); border-color: var(--accent-color); }
+        
+        .compare-header { padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 1.1rem; color: var(--heading-color); }
+        .compare-header .issue { display: flex; align-items: center; gap: 0.75rem; }
+        .badge { padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; }
+        .badge-excel { background-color: rgba(16, 185, 129, 0.1); color: var(--excel-color); border: 1px solid var(--excel-color); }
+        
+        .compare-content { display: none; padding: 0 1.5rem 1.5rem 1.5rem; animation: slideDown 0.3s ease; }
+        .compare-content.open { display: flex; flex-direction: column; gap: 1rem; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .solution { background-color: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--sql-color); padding: 1rem; border-radius: 0 8px 8px 0; margin-top: 1rem; }
+        .solution h4 { margin: 0 0 0.5rem 0; color: var(--sql-color); display: flex; align-items: center; gap: 0.5rem; }
+        .solution p { margin: 0; font-size: 1rem; line-height: 1.5; color: var(--text-color); }
+
+        /* Navigation */
+        .nav-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 3rem; }
+        .nav-btn { background-color: var(--accent-color); color: #fff; border: none; padding: 0.75rem 2rem; border-radius: 999px; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3); font-family: 'Outfit', sans-serif; }
+        .nav-btn:hover:not(:disabled) { background-color: var(--accent-hover); transform: translateY(-2px); }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .page-indicator { font-weight: 600; color: var(--heading-color); font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>📊 Data Foundations</h1>
+        <button class="theme-toggle" onclick="toggleTheme()">☀️ Light Mode</button>
+    </header>
+
+    <!-- PAGE 1: Core Concepts -->
+    <div class="page active" id="page-0">
+        <p class="intro-text">Before diving into queries, we must understand the "Big Picture".<br><strong>Click on the cards below</strong> to reveal the core concepts of Business Alignment and Structural Design.</p>
+        
+        <div class="persona-grid">
+            <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <div class="icon">🧑‍💼</div>
+                        <h3>User Persona</h3>
+                        <div class="click-hint">Click to reveal</div>
+                    </div>
+                    <div class="flip-card-back">
+                        <p><strong>Know who you build for.</strong><br><br>C-Suite executives need high-level strategic dashboards, while Ops Managers need granular daily tracking.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <div class="icon">📈</div>
+                        <h3>Metrics & KPIs</h3>
+                        <div class="click-hint">Click to reveal</div>
+                    </div>
+                    <div class="flip-card-back">
+                        <p><strong>Quantitative measures of success.</strong><br><br>Defining things like Revenue Growth, Churn Rate, or CAC to evaluate business health accurately.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <div class="icon">🏗️</div>
+                        <h3>Data Modelling</h3>
+                        <div class="click-hint">Click to reveal</div>
+                    </div>
+                    <div class="flip-card-back">
+                        <p><strong>Structuring the backend.</strong><br><br>Organizing data logically and mapping how various entities relate to one another behind the scenes.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <div class="icon">📉</div>
+                        <h3>Visualization & Stats</h3>
+                        <div class="click-hint">Click to reveal</div>
+                    </div>
+                    <div class="flip-card-back">
+                        <p><strong>Extracting insights.</strong><br><br>Converting processed data into charts, applying statistical thinking to identify trends, and extracting actionable insights from raw tables.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <div class="icon">📖</div>
+                        <h3>Data Stories</h3>
+                        <div class="click-hint">Click to reveal</div>
+                    </div>
+                    <div class="flip-card-back">
+                        <p><strong>Beyond dry statistics.</strong><br><br>Translating data into a compelling business narrative that inspires confident decision-making.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 2: KPI Interactive Task -->
+    <div class="page" id="page-1">
+        <p class="intro-text">Interactive Task: Identify the core KPIs for different business domains.<br><strong>Ask the class to guess 5 KPIs for a domain, then click the card to reveal the answers!</strong></p>
+
+        <div class="persona-grid">
+            <div class="kpi-domain-card" onclick="this.classList.add('revealed')">
+                <div class="domain-title"><span>🛍️</span> E-Commerce</div>
+                <div class="click-hint">Click to reveal 5 KPIs</div>
+                <div class="kpi-list">
+                    <ul>
+                        <li>Conversion Rate</li>
+                        <li>Average Order Value (AOV)</li>
+                        <li>Cart Abandonment Rate</li>
+                        <li>Customer Lifetime Value (CLTV)</li>
+                        <li>Return/Refund Rate</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="kpi-domain-card" onclick="this.classList.add('revealed')">
+                <div class="domain-title"><span>📢</span> Marketing</div>
+                <div class="click-hint">Click to reveal 5 KPIs</div>
+                <div class="kpi-list">
+                    <ul>
+                        <li>Click-Through Rate (CTR)</li>
+                        <li>Cost Per Acquisition (CPA)</li>
+                        <li>Return on Ad Spend (ROAS)</li>
+                        <li>Bounce Rate</li>
+                        <li>Lead-to-Customer Ratio</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="kpi-domain-card" onclick="this.classList.add('revealed')">
+                <div class="domain-title"><span>🤝</span> Human Resources</div>
+                <div class="click-hint">Click to reveal 5 KPIs</div>
+                <div class="kpi-list">
+                    <ul>
+                        <li>Employee Turnover / Churn Rate</li>
+                        <li>Time to Hire</li>
+                        <li>Cost per Hire</li>
+                        <li>Absenteeism Rate</li>
+                        <li>Employee Satisfaction (eNPS)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="kpi-domain-card" onclick="this.classList.add('revealed')">
+                <div class="domain-title"><span>💰</span> Finance</div>
+                <div class="click-hint">Click to reveal 5 KPIs</div>
+                <div class="kpi-list">
+                    <ul>
+                        <li>Gross Profit Margin</li>
+                        <li>Operating Cash Flow</li>
+                        <li>Current Ratio</li>
+                        <li>Debt-to-Equity Ratio</li>
+                        <li>Working Capital</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="kpi-domain-card" onclick="this.classList.add('revealed')">
+                <div class="domain-title"><span>🏥</span> Healthcare</div>
+                <div class="click-hint">Click to reveal 5 KPIs</div>
+                <div class="kpi-list">
+                    <ul>
+                        <li>Patient Wait Time</li>
+                        <li>Readmission Rate</li>
+                        <li>Average Treatment Cost</li>
+                        <li>Bed Occupancy Rate</li>
+                        <li>Patient Satisfaction Score</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="kpi-domain-card" onclick="this.classList.add('revealed')">
+                <div class="domain-title"><span>🚚</span> Logistics</div>
+                <div class="click-hint">Click to reveal 5 KPIs</div>
+                <div class="kpi-list">
+                    <ul>
+                        <li>On-Time Delivery Rate</li>
+                        <li>Order Accuracy Rate</li>
+                        <li>Inventory Turnover Ratio</li>
+                        <li>Freight Cost per Unit</li>
+                        <li>Average Delivery Time</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="kpi-domain-card" onclick="this.classList.add('revealed')">
+                <div class="domain-title"><span>☁️</span> SaaS</div>
+                <div class="click-hint">Click to reveal 5 KPIs</div>
+                <div class="kpi-list">
+                    <ul>
+                        <li>Monthly Recurring Revenue (MRR)</li>
+                        <li>Customer Acquisition Cost (CAC)</li>
+                        <li>Churn Rate</li>
+                        <li>Customer Lifetime Value (CLV)</li>
+                        <li>Net Promoter Score (NPS)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="kpi-domain-card" onclick="this.classList.add('revealed')">
+                <div class="domain-title"><span>🎧</span> Customer Support</div>
+                <div class="click-hint">Click to reveal 5 KPIs</div>
+                <div class="kpi-list">
+                    <ul>
+                        <li>Average Resolution Time</li>
+                        <li>First Contact Resolution (FCR)</li>
+                        <li>Customer Satisfaction (CSAT)</li>
+                        <li>Ticket Backlog</li>
+                        <li>Net Promoter Score (NPS)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="kpi-domain-card" onclick="this.classList.add('revealed')">
+                <div class="domain-title"><span>🏭</span> Manufacturing</div>
+                <div class="click-hint">Click to reveal 5 KPIs</div>
+                <div class="kpi-list">
+                    <ul>
+                        <li>Overall Equipment Effectiveness (OEE)</li>
+                        <li>Defect Rate</li>
+                        <li>Production Downtime</li>
+                        <li>Cycle Time</li>
+                        <li>Capacity Utilization</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 3: SQL vs Excel -->
+    <div class="page" id="page-2">
+        <p class="intro-text">If we can build pivot tables and charts in Excel, why do we need SQL?<br><strong>Click a limitation below</strong> to see how SQL solves it.</p>
+        
+        <div class="comparison-grid">
+            
+            <div class="compare-box" onclick="toggleBox('box1')">
+                <div class="compare-header">
+                    <div class="issue"><span>⚖️</span> 1. Scale of Data</div>
+                    <span class="badge badge-excel">Excel Limitation</span>
+                </div>
+                <div class="compare-content" id="box1">
+                    <p>Excel has a hard limit of ~1 million rows. Very large files won't open or cause the application to crash, making True "Big Data" impossible.</p>
+                    <div class="solution">
+                        <h4>🟦 The SQL Solution</h4>
+                        <p>Relational Databases (RDBMS) are built to securely store Terabytes and Petabytes of data, processing millions of transactions per second seamlessly without crashing.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compare-box" onclick="toggleBox('box2')">
+                <div class="compare-header">
+                    <div class="issue"><span>🔗</span> 2. Data Wrangling & Lookups</div>
+                    <span class="badge badge-excel">Excel Limitation</span>
+                </div>
+                <div class="compare-content" id="box2">
+                    <p>Combining multiple sheets requires complex `VLOOKUP` or `XLOOKUP` formulas. This becomes incredibly fragile and tedious when managing dozens of tables.</p>
+                    <div class="solution">
+                        <h4>🟦 The SQL Solution</h4>
+                        <p>SQL uses clean, powerful <code>JOIN</code> operations to instantly combine data across massive tables based on strict primary/foreign key relationships.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compare-box" onclick="toggleBox('box3')">
+                <div class="compare-header">
+                    <div class="issue"><span>🔐</span> 3. Security & Access Control</div>
+                    <span class="badge badge-excel">Excel Limitation</span>
+                </div>
+                <div class="compare-content" id="box3">
+                    <p>Important spreadsheets can easily be copied, shared improperly, or stolen. They lack fine-grained, row-level access permissions.</p>
+                    <div class="solution">
+                        <h4>🟦 The SQL Solution</h4>
+                        <p>Enterprise Security provides built-in Authentication & Authorization. You can set granular control levels (e.g., read-only access for analysts, full edit access for engineers).</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compare-box" onclick="toggleBox('box4')">
+                <div class="compare-header">
+                    <div class="issue"><span>🗂️</span> 4. Versioning Chaos</div>
+                    <span class="badge badge-excel">Excel Limitation</span>
+                </div>
+                <div class="compare-content" id="box4">
+                    <p>Working with a group of people creates massive confusion and file duplication (e.g., <code>final_v1.xlsx</code>, <code>final_v2.xlsx</code>, <code>final_FINAL.xlsx</code>).</p>
+                    <div class="solution">
+                        <h4>🟦 The SQL Solution</h4>
+                        <p>Centralized Location. Everyone queries the exact same Single Source of Truth at the same time—no more emailing updated spreadsheet versions around.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compare-box" onclick="toggleBox('box5')">
+                <div class="compare-header">
+                    <div class="issue"><span>🧹</span> 5. Data Quality Concerns</div>
+                    <span class="badge badge-excel">Excel Limitation</span>
+                </div>
+                <div class="compare-content" id="box5">
+                    <p>Excel allows invalid entries (e.g., an Age column containing text like "Twenty Two"). This requires constant, manual data cleaning.</p>
+                    <div class="solution">
+                        <h4>🟦 The SQL Solution</h4>
+                        <p>Strict Schema Constraints (Data types, NOT NULL, CHECK) automatically block invalid data from ever being inserted into the database.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compare-box" onclick="toggleBox('box6')">
+                <div class="compare-header">
+                    <div class="issue"><span>🏗️</span> 6. Fragile Relationships</div>
+                    <span class="badge badge-excel">Excel Limitation</span>
+                </div>
+                <div class="compare-content" id="box6">
+                    <p>It is very hard to build and maintain rigid relationships between entities in Excel, making data verification a highly manual process.</p>
+                    <div class="solution">
+                        <h4>🟦 The SQL Solution</h4>
+                        <p>RDBMS structures enforce relationships natively via Primary Keys and Foreign Keys, ensuring orphaned records cannot exist.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="compare-box" onclick="toggleBox('box7')">
+                <div class="compare-header">
+                    <div class="issue"><span>💾</span> 7. Backups & Recovery</div>
+                    <span class="badge badge-excel">Excel Limitation</span>
+                </div>
+                <div class="compare-content" id="box7">
+                    <p>If a system crashes or a file gets corrupted without a recent manual copy, the data is entirely lost.</p>
+                    <div class="solution">
+                        <h4>🟦 The SQL Solution</h4>
+                        <p>Automatic secondary-location backups and transaction logs safeguard against data loss and system crashes, allowing point-in-time recovery.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compare-box" onclick="toggleBox('box8')">
+                <div class="compare-header">
+                    <div class="issue"><span>🤖</span> 8. Automation Limits</div>
+                    <span class="badge badge-excel">Excel Limitation</span>
+                </div>
+                <div class="compare-content" id="box8">
+                    <p>While Excel macros and VBA exist, they are notoriously fragile and are absolutely not built for automated enterprise data pipelines.</p>
+                    <div class="solution">
+                        <h4>🟦 The SQL Solution</h4>
+                        <p>Advanced Automation using User Defined Functions (UDFs) and Stored Procedures allows complex queries to be scheduled and run entirely automatically on a daily basis.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>Previous</button>
+        <span class="page-indicator" id="page-text">Page 1 of 3</span>
+        <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next Page</button>
+    </div>
+</div>
+
+<script>
+    let currentPage = 0;
+    const totalPages = 3;
+
+    function toggleTheme() {
+        document.body.classList.toggle('light-mode');
+        const btn = document.querySelector('.theme-toggle');
+        btn.innerHTML = document.body.classList.contains('light-mode') ? '🌙 Dark Mode' : '☀️ Light Mode';
+    }
+
+    function navigate(dir) {
+        document.getElementById(`page-${currentPage}`).classList.remove('active');
+        currentPage += dir;
+        document.getElementById(`page-${currentPage}`).classList.add('active');
+        
+        document.getElementById('page-text').innerText = `Page ${currentPage + 1} of 3`;
+        document.getElementById('prev-btn').disabled = currentPage === 0;
+        document.getElementById('next-btn').disabled = currentPage === totalPages - 1;
+        
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function toggleBox(id) {
+        const content = document.getElementById(id);
+        if (content.classList.contains('open')) {
+            content.classList.remove('open');
+        } else {
+            // Close others
+            document.querySelectorAll('.compare-content').forEach(el => el.classList.remove('open'));
+            content.classList.add('open');
+            // Small timeout to allow animation to start before scrolling
+            setTimeout(() => {
+                content.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+    }
+</script>
+
+</body>
+</html>
