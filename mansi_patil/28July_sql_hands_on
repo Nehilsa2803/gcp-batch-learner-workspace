@@ -1,0 +1,185 @@
+With valid_categories AS(
+	SELECT 
+		category,
+		sub_category,
+		SUM(sales_amount) AS sub_cat_sales
+	FROM ex_orders o 
+	JOIN ex_transactions t 
+		ON o.order_id = t.order_id 
+	JOIN ex_products p 
+		ON t.product_id = p.product_id
+	WHERE o.order_status NOT IN('canceled','unavailable')
+	GROUP BY p.category,p.sub_category
+),
+sales_table AS (
+    SELECT category,
+        sub_category,
+        sub_cat_sales,
+        SUM(sub_cat_sales) OVER (PARTITION BY category) AS category_total_sales ,
+        SUM(sub_cat_sales) OVER () AS grand_total_sales
+    FROM 
+        valid_categories
+)
+SELECT 
+    category,
+    sub_category,
+    DENSE_RANK() OVER (PARTITION BY category ORDER BY sub_cat_sales DESC) AS [sub_cat Rank],
+    
+        CONCAT(
+        CAST(ROUND((sub_cat_sales * 100.0 / category_total_sales), 2) AS DECIMAL(10,2)), 
+        '%'
+    ) AS sales_contribution_to_category,
+    
+       CONCAT(
+        CAST(ROUND((sub_cat_sales * 100.0 / grand_total_sales), 2) AS DECIMAL(10,2)), 
+        '%'
+    ) AS overall_sales_contribution
+    
+FROM 
+    sales_table
+ORDER BY 
+    category, 
+    [sub_cat Rank], 
+    sub_category;
+
+
+-- 1. 
+With valid_categories AS(
+	SELECT 
+		category,
+		sub_category,
+		SUM(sales_amount) AS sub_cat_sales
+	FROM ex_orders o 
+	JOIN ex_transactions t 
+		ON o.order_id = t.order_id 
+	JOIN ex_products p 
+		ON t.product_id = p.product_id
+	WHERE o.order_status NOT IN('canceled','unavailable')
+	GROUP BY p.category,p.sub_category
+),
+sales_table AS (
+    SELECT category,
+        sub_category,
+        sub_cat_sales,
+        SUM(sub_cat_sales) OVER (PARTITION BY category) AS category_total_sales ,
+        SUM(sub_cat_sales) OVER () AS grand_total_sales
+    FROM 
+        valid_categories
+)
+SELECT 
+    category,
+    sub_category,
+    DENSE_RANK() OVER (PARTITION BY category ORDER BY sub_cat_sales DESC) AS [sub_cat Rank],
+    
+        CONCAT(
+        CAST(ROUND((sub_cat_sales * 100.0 / category_total_sales), 2) AS DECIMAL(10,2)), 
+        '%'
+    ) AS sales_contribution_to_category,
+    
+       CONCAT(
+        CAST(ROUND((sub_cat_sales * 100.0 / grand_total_sales), 2) AS DECIMAL(10,2)), 
+        '%'
+    ) AS overall_sales_contribution
+    
+FROM 
+    sales_table
+WHERE sub_category = 'Appliances'
+ORDER BY 
+    category, 
+    [sub_cat Rank], 
+    sub_category;
+
+-- 2. 
+With valid_categories AS(
+	SELECT 
+		category,
+		sub_category,
+		SUM(sales_amount) AS sub_cat_sales
+	FROM ex_orders o 
+	JOIN ex_transactions t 
+		ON o.order_id = t.order_id 
+	JOIN ex_products p 
+		ON t.product_id = p.product_id
+	WHERE o.order_status NOT IN('canceled','unavailable')
+	GROUP BY p.category,p.sub_category
+),
+sales_table AS (
+    SELECT category,
+        sub_category,
+        sub_cat_sales,
+        SUM(sub_cat_sales) OVER (PARTITION BY category) AS category_total_sales ,
+        SUM(sub_cat_sales) OVER () AS grand_total_sales
+    FROM 
+        valid_categories
+)
+SELECT 
+    category,
+    sub_category,
+    DENSE_RANK() OVER (PARTITION BY category ORDER BY sub_cat_sales DESC) AS [sub_cat Rank],
+    
+        CONCAT(
+        CAST(ROUND((sub_cat_sales * 100.0 / category_total_sales), 2) AS DECIMAL(10,2)), 
+        '%'
+    ) AS sales_contribution_to_category,
+    
+       CONCAT(
+        CAST(ROUND((sub_cat_sales * 100.0 / grand_total_sales), 2) AS DECIMAL(10,2)), 
+        '%'
+    ) AS overall_sales_contribution
+    
+FROM 
+    sales_table
+WHERE  CONCAT(
+        CAST(ROUND((sub_cat_sales * 100.0 / grand_total_sales), 2) AS DECIMAL(10,2)), 
+        '%'
+    ) > '7%' 
+ORDER BY 
+    category, 
+    [sub_cat Rank], 
+    sub_category;
+
+
+--3. 
+With valid_categories AS(
+	SELECT 
+		category,
+		sub_category,
+		SUM(sales_amount) AS sub_cat_sales
+	FROM ex_orders o 
+	JOIN ex_transactions t 
+		ON o.order_id = t.order_id 
+	JOIN ex_products p 
+		ON t.product_id = p.product_id
+	WHERE o.order_status NOT IN('canceled','unavailable')
+	GROUP BY p.category,p.sub_category
+),
+sales_table AS (
+    SELECT category,
+        sub_category,
+        sub_cat_sales,
+        SUM(sub_cat_sales) OVER (PARTITION BY category) AS category_total_sales ,
+        SUM(sub_cat_sales) OVER () AS grand_total_sales
+    FROM 
+        valid_categories
+)
+SELECT 
+    category,
+    sub_category,
+    DENSE_RANK() OVER (PARTITION BY category ORDER BY sub_cat_sales DESC) AS [sub_cat Rank],
+    
+        CONCAT(
+        CAST(ROUND((sub_cat_sales * 100.0 / category_total_sales), 2) AS DECIMAL(10,2)), 
+        '%'
+    ) AS sales_contribution_to_category,
+    
+       CONCAT(
+        CAST(ROUND((sub_cat_sales * 100.0 / grand_total_sales), 2) AS DECIMAL(10,2)), 
+        '%'
+    ) AS overall_sales_contribution
+    
+FROM 
+    sales_table
+ORDER BY 
+    category, 
+    [sub_cat Rank], 
+    sub_category;
