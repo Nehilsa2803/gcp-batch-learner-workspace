@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Knowledge Evaluator - Complete</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #cbd5e1;
+            --heading-color: #f8fafc;
+            --accent-color: #38bdf8;
+            --card-bg: #1e293b;
+            --code-bg: #0b1120;
+            --border-color: #334155;
+            --highlight: #fbbf24;
+            --btn-bg: #3b82f6;
+            --btn-hover: #2563eb;
+            --btn-text: #ffffff;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+        }
+
+        body.light-mode {
+            --bg-color: #f8fafc;
+            --text-color: #334155;
+            --heading-color: #0f172a;
+            --accent-color: #0284c7;
+            --card-bg: #ffffff;
+            --code-bg: #f1f5f9;
+            --border-color: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 2rem; position: relative; }
+        
+        .floating-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1; overflow: hidden; }
+        .floating-word { position: absolute; font-family: 'Fira Code', monospace; font-weight: 600; white-space: nowrap; opacity: 0.35; animation: floatUp linear infinite; }
+        @keyframes floatUp { 0% { transform: translateY(110vh) rotate(-5deg); } 100% { transform: translateY(-20vh) rotate(5deg); } }
+        
+        .container { max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem; }
+        h1 { font-size: 2.2rem; margin: 0; color: var(--heading-color); }
+        .theme-toggle { background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        
+        .controls { background-color: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+        .controls label { font-weight: 600; color: var(--heading-color); font-size: 1.1rem; }
+        select { width: 100%; padding: 0.75rem 1rem; font-size: 1rem; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--text-color); font-family: 'Inter', sans-serif; cursor: pointer; }
+        
+        .topic-container { display: none; animation: fadeIn 0.4s ease; }
+        .topic-container.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .definition-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; border-left: 4px solid var(--accent-color); }
+        .definition-card h2 { margin-top: 0; color: var(--accent-color); font-size: 1.5rem; margin-bottom: 1rem; }
+        
+        .mcq-grid { display: flex; flex-direction: column; gap: 2rem; }
+        .quiz-section { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .quiz-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.5rem; }
+        .quiz-badge { background-color: var(--accent-color); color: #fff; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+        .quiz-question { font-weight: 600; font-size: 1.1rem; color: var(--heading-color); margin: 0; }
+        
+        .quiz-options { display: flex; flex-direction: column; gap: 0.75rem; }
+        .quiz-option { background-color: var(--bg-color); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; cursor: pointer; color: var(--text-color); text-align: left; font-size: 1rem; }
+        .quiz-option:hover:not(:disabled) { border-color: var(--accent-color); transform: translateX(5px); }
+        .quiz-option.correct { background-color: rgba(16, 185, 129, 0.1); border-color: var(--success-color); color: var(--success-color); }
+        .quiz-option.incorrect { background-color: rgba(239, 68, 68, 0.1); border-color: var(--error-color); color: var(--error-color); }
+        .quiz-explanation { display: none; margin-top: 1.5rem; padding: 1.25rem; border-radius: 8px; font-weight: 500; line-height: 1.5; border: 1px solid transparent; }
+        
+        code { font-family: 'Fira Code', monospace; background-color: var(--code-bg); color: var(--highlight); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+<div class="floating-bg" id="floating-bg"></div>
+
+<div class="container">
+    <header>
+        <h1>SQL Knowledge Evaluator</h1>
+        <button class="theme-toggle" onclick="toggleTheme()">☀️ Light Mode</button>
+    </header>
+
+    <div class="controls">
+        <label for="topic-select">Select a Concept to Revise:</label>
+        <select id="topic-select" onchange="switchTopic(this.value)">
+            <option value="" disabled selected>-- Choose a SQL Topic --</option>
+            <option value="fundamentals">1. Fundamentals (SELECT, WHERE, ORDER BY...)</option>
+            <option value="operators">2. Operators & Filtering Conditions</option>
+            <option value="functions">3. Built-in Functions</option>
+            <option value="aggregation">4. Aggregation & Grouping</option>
+            <option value="joins">5. Joins (Combining Tables)</option>
+            <option value="sets">6. Set Operations (UNION, INTERSECT...)</option>
+            <option value="subqueries">7. Subqueries</option>
+            <option value="ctes">8. Common Table Expressions (CTEs)</option>
+        </select>
+    </div>
+
+    <!-- 1. FUNDAMENTALS -->
+    <div id="fundamentals" class="topic-container">
+        <div class="definition-card">
+            <h2>Fundamentals</h2>
+            <p>The core building blocks of SQL involving data retrieval, filtering, and sorting.</p>
+        </div>
+        <div class="mcq-grid">
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">RDBMS Concepts</span>
+                    <p class="quiz-question">What is the primary purpose of a Foreign Key?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="That is a Primary Key." onclick="checkAnswer(this)">To uniquely identify a row within its own table.</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! A foreign key points to a primary key in another table, creating a relational link." onclick="checkAnswer(this)">To establish a link between data in two tables.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">SELECT Statement</span>
+                    <p class="quiz-question">Why is it best practice to specify column names instead of using <code>SELECT *</code>?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! Selecting * fetches unneeded data (wasting network/memory) and can break applications if table schemas change." onclick="checkAnswer(this)">It improves performance and protects against unexpected schema changes.</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="SELECT * does not inherently prevent indexing; the issue is data payload and stability." onclick="checkAnswer(this)">Because SELECT * prevents the use of indexes.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Aliasing</span>
+                    <p class="quiz-question">Which keyword is used to give a table or column a temporary name?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="ALIAS is not a valid SQL keyword for this." onclick="checkAnswer(this)">ALIAS</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! The AS keyword is used (e.g., SELECT col AS my_col)." onclick="checkAnswer(this)">AS</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">WHERE Clause</span>
+                    <p class="quiz-question">At what stage in query execution does the <code>WHERE</code> clause operate?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="HAVING filters after aggregation. WHERE filters before." onclick="checkAnswer(this)">After GROUP BY, to filter aggregated data.</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! The engine filters raw rows using WHERE before grouping or selecting them." onclick="checkAnswer(this)">Before GROUP BY, to filter individual rows.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">ORDER BY</span>
+                    <p class="quiz-question">How do you sort results from highest to lowest salary?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="ASC is Ascending (lowest to highest), which is the default." onclick="checkAnswer(this)">ORDER BY salary ASC</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! DESC stands for Descending." onclick="checkAnswer(this)">ORDER BY salary DESC</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">LIMIT / TOP</span>
+                    <p class="quiz-question">What is the purpose of the <code>LIMIT</code> (or TOP) clause?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! LIMIT caps the result set, often used with ORDER BY to get 'Top N' records." onclick="checkAnswer(this)">To restrict the maximum number of rows returned by the query.</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="That is what WHERE or HAVING does." onclick="checkAnswer(this)">To filter out specific values based on a condition.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. OPERATORS -->
+    <div id="operators" class="topic-container">
+        <div class="definition-card">
+            <h2>Operators & Filtering Conditions</h2>
+            <p>Advanced filtering using comparison, logical, pattern-matching, and null-checking operators.</p>
+        </div>
+        <div class="mcq-grid">
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Comparison Operators</span>
+                    <p class="quiz-question">Which of the following operators checks if two values are NOT equal?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="This means 'less than or equal to'." onclick="checkAnswer(this)">&lt;=</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! Both <> and != are widely accepted as 'not equal to'." onclick="checkAnswer(this)">&lt;&gt; (or !=)</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Logical Operators</span>
+                    <p class="quiz-question">In a query with <code>WHERE condition A OR condition B AND condition C</code>, which evaluates first?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! AND has higher precedence than OR. Always use parentheses to make your intent clear!" onclick="checkAnswer(this)">AND evaluates before OR.</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="Logical operators have strict precedence rules. AND is evaluated before OR." onclick="checkAnswer(this)">They evaluate strictly left-to-right.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">IN Operator</span>
+                    <p class="quiz-question">The <code>IN</code> operator is a shorthand for multiple what?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="AND would mean the column has to equal all values simultaneously, which is impossible." onclick="checkAnswer(this)">AND conditions</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! 'col IN (1,2)' is equivalent to 'col = 1 OR col = 2'." onclick="checkAnswer(this)">OR conditions</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">BETWEEN</span>
+                    <p class="quiz-question">Is the <code>BETWEEN</code> operator inclusive or exclusive of the boundary values?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! BETWEEN 1 AND 10 includes both 1 and 10." onclick="checkAnswer(this)">Inclusive</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="BETWEEN always includes the start and end values." onclick="checkAnswer(this)">Exclusive</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">LIKE / ILIKE</span>
+                    <p class="quiz-question">If you want to find all names that have exactly 4 characters, which pattern do you use with <code>LIKE</code>?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="'%' represents zero or more characters. '%%%%' just means 'anything'." onclick="checkAnswer(this)">LIKE '%%%%'</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! The underscore '_' represents exactly one single character." onclick="checkAnswer(this)">LIKE '____' (4 underscores)</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Handling Missing Values</span>
+                    <p class="quiz-question">Why must you use <code>IS NULL</code> instead of <code>= NULL</code>?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! NULL represents an unknown. Checking if something equals unknown yields 'unknown', not True." onclick="checkAnswer(this)">Because equality (=) against NULL evaluates to UNKNOWN.</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="SQL parses '= NULL' fine, it just doesn't return the rows you expect." onclick="checkAnswer(this)">Because = NULL causes a syntax error.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. FUNCTIONS -->
+    <div id="functions" class="topic-container">
+        <div class="definition-card">
+            <h2>Built-in Functions</h2>
+            <p>Functions to manipulate strings, numbers, dates, and handle conditional logic within queries.</p>
+        </div>
+        <div class="mcq-grid">
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">String Functions</span>
+                    <p class="quiz-question">Which function removes leading and trailing spaces from a string?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="REPLACE swaps specific characters, it doesn't target just the outer spaces inherently." onclick="checkAnswer(this)">REPLACE()</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! TRIM() cleans up whitespace from both ends of a string." onclick="checkAnswer(this)">TRIM()</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Math Functions</span>
+                    <p class="quiz-question">What does the query <code>SELECT ROUND(14.567, 1);</code> return?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="ROUND rounds to the nearest value, it doesn't just truncate." onclick="checkAnswer(this)">14.5</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! It rounds to 1 decimal place. Since 6 is > 5, it rounds up to 14.6." onclick="checkAnswer(this)">14.6</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Date Functions</span>
+                    <p class="quiz-question">How do you pull just the year out of a timestamp column?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! EXTRACT is the standard SQL function to get parts of a date." onclick="checkAnswer(this)">EXTRACT(YEAR FROM column_name)</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="DATE_TRUNC truncates the date (e.g. to the first of the year), but it still returns a full timestamp, not just the integer year." onclick="checkAnswer(this)">DATE_TRUNC('year', column_name)</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Control Flow</span>
+                    <p class="quiz-question">What does the <code>COALESCE(val1, val2, val3)</code> function do?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="No, it evaluates from left to right." onclick="checkAnswer(this)">Returns the last non-null value.</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! It is heavily used to provide default values when data is missing (NULL)." onclick="checkAnswer(this)">Returns the first non-null value in the list.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+            
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">CASE WHEN</span>
+                    <p class="quiz-question">In a <code>CASE WHEN</code> statement, what happens if no conditions are met and there is no <code>ELSE</code> clause?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! If no condition is met and ELSE is omitted, it implicitly returns NULL." onclick="checkAnswer(this)">It returns NULL.</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="SQL does not throw an error, it gracefully falls back to NULL." onclick="checkAnswer(this)">It throws a runtime error.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. AGGREGATION -->
+    <div id="aggregation" class="topic-container">
+        <div class="definition-card">
+            <h2>Aggregation & Grouping</h2>
+            <p>Calculate summaries across multiple rows and filter based on those calculated groups.</p>
+        </div>
+        <div class="mcq-grid">
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Aggregate Functions</span>
+                    <p class="quiz-question">Which function returns the total sum of a numeric column?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="COUNT returns the number of rows, not the sum of their values." onclick="checkAnswer(this)">COUNT()</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! SUM() adds all the numeric values together." onclick="checkAnswer(this)">SUM()</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">COUNT Logic</span>
+                    <p class="quiz-question">What is the functional difference between <code>COUNT(*)</code> and <code>COUNT(column_name)</code>?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! COUNT(column) evaluates data existence, while COUNT(*) evaluates row existence." onclick="checkAnswer(this)">COUNT(*) counts all rows, COUNT(column_name) ignores NULLs in that column.</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="COUNT(*) counts rows. It does not count columns." onclick="checkAnswer(this)">COUNT(*) counts columns, COUNT(column_name) counts rows.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">GROUP BY</span>
+                    <p class="quiz-question">If you have an aggregate function in your SELECT list alongside a normal column, what MUST you include in the query?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! All non-aggregated columns in the SELECT clause must be included in the GROUP BY clause." onclick="checkAnswer(this)">A GROUP BY clause containing the normal column.</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="An ORDER BY is optional and just sorts the final output." onclick="checkAnswer(this)">An ORDER BY clause.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">HAVING</span>
+                    <p class="quiz-question">Why do we use the <code>HAVING</code> clause instead of <code>WHERE</code> sometimes?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="HAVING is specifically for aggregates; WHERE is for raw rows." onclick="checkAnswer(this)">Because HAVING executes faster than WHERE on large tables.</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! You cannot say 'WHERE SUM(sales) > 100'. You must use 'HAVING SUM(sales) > 100'." onclick="checkAnswer(this)">Because WHERE cannot be used to filter on aggregate functions.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. JOINS -->
+    <div id="joins" class="topic-container">
+        <div class="definition-card">
+            <h2>Joins (Combining Tables)</h2>
+            <p>Bringing related data from multiple tables into a single result set.</p>
+        </div>
+        <div class="mcq-grid">
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">INNER JOIN</span>
+                    <p class="quiz-question">What does an <code>INNER JOIN</code> return?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! It strictly requires a match on both sides of the join condition." onclick="checkAnswer(this)">Only rows that have matching values in both tables.</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="That describes a FULL OUTER JOIN." onclick="checkAnswer(this)">All rows from both tables, regardless of matches.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">LEFT JOIN</span>
+                    <p class="quiz-question">In a <code>LEFT JOIN</code>, what happens if a row from the left table has no match in the right table?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="No, it keeps the left row because it's a LEFT join." onclick="checkAnswer(this)">The row is excluded from the results.</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! The left row is returned, and all columns coming from the right table are populated with NULL." onclick="checkAnswer(this)">The row is included, with NULLs for the right table's columns.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">FULL vs CROSS</span>
+                    <p class="quiz-question">Which join creates a Cartesian product (every row from Table A combined with every row from Table B)?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! Cross joins produce a massive multiplier of rows (rowsA * rowsB)." onclick="checkAnswer(this)">CROSS JOIN</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="FULL OUTER JOIN still relies on a join condition (ON), it just keeps unmatched rows from both sides." onclick="checkAnswer(this)">FULL OUTER JOIN</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">SELF JOIN</span>
+                    <p class="quiz-question">What is a SELF JOIN typically used for?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! E.g. An employees table where an employee's 'manager_id' points to another employee's 'id' in the same table." onclick="checkAnswer(this)">To query hierarchical data within the same table (like finding an employee's manager).</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="This is handled via Set Operations (UNION, INTERSECT), not Joins." onclick="checkAnswer(this)">To duplicate all records in a table.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+            
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Compound Keys</span>
+                    <p class="quiz-question">Can you JOIN two tables using more than one column condition?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="You can definitely use multiple conditions." onclick="checkAnswer(this)">No, JOINs restrict you to matching exactly one key column.</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! You just use 'ON t1.key1 = t2.key1 AND t1.key2 = t2.key2'." onclick="checkAnswer(this)">Yes, using the AND operator in the ON clause.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. SETS -->
+    <div id="sets" class="topic-container">
+        <div class="definition-card">
+            <h2>Set Operations</h2>
+            <p>Operations that combine multiple SELECT queries vertically. They require the same number of columns and compatible data types.</p>
+        </div>
+        <div class="mcq-grid">
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">UNION vs UNION ALL</span>
+                    <p class="quiz-question">Why is <code>UNION ALL</code> generally faster than <code>UNION</code>?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="Both operations scan the data similarly." onclick="checkAnswer(this)">Because UNION ALL skips evaluating the WHERE clauses.</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! UNION performs an implicit DISTINCT to remove duplicates, which requires sorting and extra CPU time." onclick="checkAnswer(this)">Because UNION ALL doesn't spend compute resources trying to find and eliminate duplicates.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">INTERSECT</span>
+                    <p class="quiz-question">What does the <code>INTERSECT</code> operator do?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! It acts like an intersection in a Venn diagram, keeping only what is shared." onclick="checkAnswer(this)">Returns only the distinct rows that appear in BOTH result sets.</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="That is what EXCEPT or MINUS does." onclick="checkAnswer(this)">Returns rows from the first query that are NOT present in the second query.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">EXCEPT / MINUS</span>
+                    <p class="quiz-question">If Query A returns {1,2,3} and Query B returns {3,4,5}, what does <code>Query A EXCEPT Query B</code> return?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="That would be the result of an INTERSECT." onclick="checkAnswer(this)">{3}</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! It takes everything in A, and subtracts anything that also appears in B." onclick="checkAnswer(this)">{1, 2}</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. SUBQUERIES -->
+    <div id="subqueries" class="topic-container">
+        <div class="definition-card">
+            <h2>Subqueries</h2>
+            <p>Queries nested inside other queries. They can appear in the SELECT, FROM, or WHERE clauses.</p>
+        </div>
+        <div class="mcq-grid">
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Subquery Locations</span>
+                    <p class="quiz-question">When a subquery is placed in the <code>FROM</code> clause, what is it often referred to as?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! It acts as a temporary table that the outer query can immediately query from. It must be aliased." onclick="checkAnswer(this)">A Derived Table (or Inline View)</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="Correlated subqueries refer to subqueries that reference columns from the outer query." onclick="checkAnswer(this)">A Correlated Subquery</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">IN vs EXISTS</span>
+                    <p class="quiz-question">Why is <code>EXISTS</code> often preferred over <code>IN</code> for large datasets?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="EXISTS does not skip indexes." onclick="checkAnswer(this)">Because EXISTS skips all indexes.</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! EXISTS short-circuits. As soon as it finds ONE matching row, it returns TRUE and stops searching." onclick="checkAnswer(this)">Because EXISTS stops searching as soon as it finds a single match, making it highly efficient.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Correlated Subqueries</span>
+                    <p class="quiz-question">What is a major disadvantage of using Correlated Subqueries?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! Because they rely on the outer query's data, they are executed row-by-row, which is terrible for performance." onclick="checkAnswer(this)">They execute row-by-row for the outer result set, leading to massive performance degradation.</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="They do not natively lock the table any more than a regular query." onclick="checkAnswer(this)">They lock the entire table during execution.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. CTES -->
+    <div id="ctes" class="topic-container">
+        <div class="definition-card">
+            <h2>Common Table Expressions (CTEs)</h2>
+            <p>Temporary named result sets defined using the <code>WITH</code> clause.</p>
+        </div>
+        <div class="mcq-grid">
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Syntax</span>
+                    <p class="quiz-question">What keyword is used to initiate a Common Table Expression?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="CTE is the acronym, not the SQL keyword." onclick="checkAnswer(this)">CTE</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! The syntax is 'WITH cte_name AS (...) SELECT ...'" onclick="checkAnswer(this)">WITH</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Advantages</span>
+                    <p class="quiz-question">What is a primary advantage of a CTE over a deeply nested subquery?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! They organize complex logic linearly at the top of the script and can be reused." onclick="checkAnswer(this)">They vastly improve readability and can be referenced multiple times in the main query.</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="CTEs do not bypass indexes." onclick="checkAnswer(this)">They bypass indexing rules, making them instantly faster.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Chaining CTEs</span>
+                    <p class="quiz-question">How do you define multiple CTEs in a single query?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="false" data-explanation="You only write the WITH keyword once." onclick="checkAnswer(this)">By using the WITH keyword before every single CTE.</button>
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! Syntax: WITH cte1 AS (...), cte2 AS (...) SELECT ..." onclick="checkAnswer(this)">By separating them with a comma after the first CTE definition.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+
+            <div class="quiz-section">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Recursive CTEs</span>
+                    <p class="quiz-question">What is the most common use-case for a Recursive CTE?</p>
+                </div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-correct="true" data-explanation="Correct! Recursive CTEs reference themselves, making them perfect for tree/hierarchical structures." onclick="checkAnswer(this)">Querying hierarchical or tree-structured data (like organizational charts).</button>
+                    <button class="quiz-option" data-correct="false" data-explanation="Window functions or GROUP BY are used for aggregations." onclick="checkAnswer(this)">Running extremely fast aggregations on millions of rows.</button>
+                </div>
+                <div class="quiz-explanation"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Background Animation
+    const sqlWords = ['SELECT', 'WHERE', 'JOIN', 'GROUP BY', 'HAVING', 'UNION', 'CTE', 'WITH', 'COUNT', 'COALESCE', 'IS NULL'];
+    const wordColors = ['#38bdf8', '#fbbf24', '#a78bfa', '#10b981', '#f472b6', '#34d399', '#facc15', '#60a5fa'];
+    const bgContainer = document.getElementById('floating-bg');
+    
+    for (let i = 0; i < 30; i++) {
+        let w = document.createElement('div'); w.className = 'floating-word'; w.innerText = sqlWords[Math.floor(Math.random() * sqlWords.length)];
+        w.style.left = Math.random() * 90 + 'vw'; w.style.animationDuration = 15 + Math.random() * 25 + 's'; w.style.animationDelay = '-' + Math.random() * 30 + 's'; 
+        w.style.fontSize = 1.2 + Math.random() * 2.5 + 'rem'; w.style.color = wordColors[Math.floor(Math.random() * wordColors.length)]; bgContainer.appendChild(w);
+    }
+
+    // UI Logic
+    function toggleTheme() { 
+        document.body.classList.toggle('light-mode'); 
+        const btn = document.querySelector('.theme-toggle');
+        btn.innerHTML = document.body.classList.contains('light-mode') ? '🌙 Dark Mode' : '☀️ Light Mode';
+    }
+
+    function switchTopic(topicId) {
+        document.querySelectorAll('.topic-container').forEach(container => { container.classList.remove('active'); });
+        if(topicId) { document.getElementById(topicId).classList.add('active'); }
+    }
+
+    // Quiz Logic
+    function checkAnswer(btn) {
+        let s = btn.closest('.quiz-section'); 
+        let o = s.querySelectorAll('.quiz-option'); 
+        let e = s.querySelector('.quiz-explanation');
+        let isC = btn.getAttribute('data-correct') === 'true'; 
+        let exp = btn.getAttribute('data-explanation'); 
+        let wA = parseInt(s.getAttribute('data-wrong-attempts') || '0');
+        
+        if (isC) {
+            btn.classList.add('correct'); 
+            e.innerHTML = `✅ ${exp}`; e.style.display = 'block'; e.style.borderColor = 'var(--success-color)'; e.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'; e.style.color = 'var(--success-color)';
+            o.forEach(opt => { opt.disabled = true; opt.style.cursor = 'not-allowed'; });
+        } else {
+            wA++; s.setAttribute('data-wrong-attempts', wA); btn.classList.add('incorrect'); btn.disabled = true; btn.style.cursor = 'not-allowed';
+            if (wA >= 2) {
+                let cOpt = null; 
+                o.forEach(opt => { 
+                    opt.disabled = true; opt.style.cursor = 'not-allowed'; 
+                    if (opt.getAttribute('data-correct') === 'true') { opt.classList.add('correct'); cOpt = opt; }
+                });
+                e.innerHTML = `❌ ${exp}<br><br><strong>Correct Answer Revealed:</strong> ${cOpt.getAttribute('data-explanation')}`;
+            } else { e.innerHTML = `❌ ${exp} Try again!`; }
+            e.style.display = 'block'; e.style.borderColor = 'var(--error-color)'; e.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; e.style.color = 'var(--error-color)';
+        }
+    }
+</script>
+</body>
+</html>
