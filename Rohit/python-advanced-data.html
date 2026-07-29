@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Python & Data Libraries</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        :root {
+            /* Light Theme Variables */
+            --bg-color-light: #f8fafc;
+            --text-color-light: #334155;
+            --sidebar-bg-light: rgba(255, 255, 255, 0.8);
+            --content-bg-light: rgba(248, 250, 252, 0.9);
+            --code-bg-light: #f1f5f9;
+            --card-bg-light: #ffffff;
+            --border-light: rgba(0, 0, 0, 0.1);
+            --heading-light: #0f172a;
+            --tab-hover-light: rgba(0, 0, 0, 0.05);
+            --output-bg-light: #e2e8f0;
+            --output-text-light: #0f172a;
+
+            /* Dark Theme Variables */
+            --bg-color-dark: #0f172a;
+            --text-color-dark: #cbd5e1;
+            --sidebar-bg-dark: rgba(30, 41, 59, 0.7);
+            --content-bg-dark: rgba(15, 23, 42, 0.7);
+            --code-bg-dark: #1e293b;
+            --card-bg-dark: rgba(30, 41, 59, 0.5);
+            --border-dark: rgba(255, 255, 255, 0.1);
+            --heading-dark: #f8fafc;
+            --tab-hover-dark: rgba(255, 255, 255, 0.05);
+            --output-bg-dark: rgba(0, 0, 0, 0.3);
+            --output-text-dark: #10b981;
+
+            /* Accents */
+            --primary-accent: #3b82f6;
+            --secondary-accent: #10b981;
+            --warning-accent: #f59e0b;
+        }
+
+        /* Apply theme based on attribute */
+        [data-theme="dark"] {
+            --bg-color: var(--bg-color-dark);
+            --text-color: var(--text-color-dark);
+            --sidebar-bg: var(--sidebar-bg-dark);
+            --content-bg: var(--content-bg-dark);
+            --code-bg: var(--code-bg-dark);
+            --card-bg: var(--card-bg-dark);
+            --border: var(--border-dark);
+            --heading: var(--heading-dark);
+            --tab-hover: var(--tab-hover-dark);
+            --output-bg: var(--output-bg-dark);
+            --output-text: var(--output-text-dark);
+        }
+
+        [data-theme="light"] {
+            --bg-color: var(--bg-color-light);
+            --text-color: var(--text-color-light);
+            --sidebar-bg: var(--sidebar-bg-light);
+            --content-bg: var(--content-bg-light);
+            --code-bg: var(--code-bg-light);
+            --card-bg: var(--card-bg-light);
+            --border: var(--border-light);
+            --heading: var(--heading-light);
+            --tab-hover: var(--tab-hover-light);
+            --output-bg: var(--output-bg-light);
+            --output-text: var(--output-text-light);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        [data-theme="dark"] body {
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+        }
+        
+        [data-theme="light"] body {
+            background-image: none;
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-right: 1px solid var(--border);
+            transition: background 0.3s, border-right 0.3s;
+        }
+
+        /* Sidebar Tabs */
+        .sidebar {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 0;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        
+        /* Custom scrollbar for sidebar */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar h1 {
+            font-size: 1.4rem;
+            margin: 0 0 1rem 0;
+            color: var(--heading);
+            transition: color 0.3s;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 4px;
+            cursor: pointer;
+            width: fit-content;
+        }
+        .theme-toggle span {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            border-radius: 16px;
+            transition: background 0.2s, color 0.2s;
+        }
+        [data-theme="dark"] .theme-dark { background: var(--primary-accent); color: white; }
+        [data-theme="light"] .theme-light { background: var(--primary-accent); color: white; }
+
+        .category-label {
+            padding: 1rem 1.5rem 0.5rem 1.5rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary-accent);
+            font-weight: 600;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            padding: 0.8rem 1.5rem;
+            text-align: left;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            font-weight: 400;
+        }
+
+        .tab-btn:hover {
+            background: var(--tab-hover);
+        }
+
+        .tab-btn.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary-accent);
+            font-weight: 600;
+            border-left: 4px solid var(--primary-accent);
+        }
+
+        /* Content Area */
+        .main-content {
+            flex: 1;
+            padding: 3rem;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+            color: var(--heading);
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-accent);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        
+        h4 {
+            font-size: 1.1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--heading);
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        /* Concept Cards */
+        .concept-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: background 0.3s, border 0.3s;
+        }
+
+        /* Code Blocks */
+        pre {
+            background: var(--code-bg);
+            padding: 1.2rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            margin-bottom: 1rem;
+            transition: background 0.3s, border 0.3s;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            color: var(--heading);
+            font-size: 0.9rem;
+        }
+        
+        /* Inline code */
+        p code, li code, td code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: var(--primary-accent);
+        }
+
+        ul, ol {
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+        li { margin-bottom: 0.5rem; }
+
+        /* Tables for Pandas descriptions */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            color: var(--heading);
+            font-weight: 600;
+        }
+
+        /* Run Button and Output */
+        .run-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            margin-bottom: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .run-btn:hover {
+            background: var(--primary-accent);
+            color: white;
+            border-color: var(--primary-accent);
+        }
+
+        .output-box {
+            display: none;
+            background: var(--output-bg);
+            border-left: 3px solid var(--secondary-accent);
+            padding: 1rem;
+            border-radius: 0 4px 4px 0;
+            margin-bottom: 1rem;
+            font-family: Courier, monospace;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: var(--output-text);
+            white-space: pre-wrap;
+            animation: fadeIn 0.3s ease;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar glass">
+        <div class="sidebar-header">
+            <h1>Python & Data Mastery</h1>
+            <div class="theme-toggle" onclick="toggleTheme()">
+                <span class="theme-light">Light</span>
+                <span class="theme-dark">Dark</span>
+            </div>
+        </div>
+
+        <div class="category-label">Advanced Core</div>
+        <button class="tab-btn active" onclick="openTab('tab-1', this)">1. Functional Python</button>
+        <button class="tab-btn" onclick="openTab('tab-2', this)">2. Iteration & Comprehensions</button>
+        <button class="tab-btn" onclick="openTab('tab-3', this)">3. Error Handling</button>
+
+        <div class="category-label">NumPy</div>
+        <button class="tab-btn" onclick="openTab('tab-4', this)">4. NumPy Arrays & Attributes</button>
+
+        <div class="category-label">Pandas</div>
+        <button class="tab-btn" onclick="openTab('tab-5', this)">5. I/O & Inspection</button>
+        <button class="tab-btn" onclick="openTab('tab-6', this)">6. Data Cleaning</button>
+        <button class="tab-btn" onclick="openTab('tab-7', this)">7. Column Mod & Functions</button>
+        <button class="tab-btn" onclick="openTab('tab-8', this)">8. Grouping & Reshaping</button>
+        <button class="tab-btn" onclick="openTab('tab-9', this)">9. Combining Datasets</button>
+        <button class="tab-btn" onclick="openTab('tab-10', this)">10. Time Series & Windows</button>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        
+        <!-- Tab 1: Functional Python -->
+        <div id="tab-1" class="tab-pane active">
+            <h2>Functional Python</h2>
+            <p>Functional programming paradigms treat computation as the evaluation of mathematical functions and avoid changing-state and mutable data. Python offers built-in support for these concepts.</p>
+            
+            <div class="concept-card">
+                <h4>Lambda Functions</h4>
+                <p>Anonymous functions defined using the <code>lambda</code> keyword. They can have any number of arguments but only one expression.</p>
+<pre><code># Syntax: lambda arguments: expression
+add = lambda x, y: x + y
+print(add(5, 3))</code></pre>
+                <button class="run-btn" onclick="runCode(this)" data-output="8">▶ Run Code</button>
+                <div class="output-box"></div>
+            </div>
+
+            <div class="concept-card">
+                <h4>map()</h4>
+                <p>Applies a given function to all items in an input iterable (like a list) and returns a map object (which can be converted back to a list).</p>
+<pre><code>nums = [1, 2, 3, 4]
+squared = list(map(lambda x: x**2, nums))
+print(squared)</code></pre>
+                <button class="run-btn" onclick="runCode(this)" data-output="[1, 4, 9, 16]">▶ Run Code</button>
+                <div class="output-box"></div>
+            </div>
+
+            <div class="concept-card">
+                <h4>filter()</h4>
+                <p>Constructs an iterator from elements of an iterable for which a given function returns True.</p>
+<pre><code>nums = [1, 2, 3, 4, 5, 6]
+evens = list(filter(lambda x: x % 2 == 0, nums))
+print(evens)</code></pre>
+                <button class="run-btn" onclick="runCode(this)" data-output="[2, 4, 6]">▶ Run Code</button>
+                <div class="output-box"></div>
+            </div>
+
+            <div class="concept-card">
+                <h4>reduce()</h4>
+                <p>Applies a rolling computation to sequential pairs of values in an iterable. It must be imported from <code>functools</code>.</p>
+<pre><code>from functools import reduce
+nums = [1, 2, 3, 4]
+product = reduce(lambda x, y: x * y, nums)
+print(product)</code></pre>
+                <button class="run-btn" onclick="runCode(this)" data-output="24">▶ Run Code</button>
+                <div class="output-box"></div>
+            </div>
+            
+            <div class="concept-card">
+                <h4>apply()</h4>
+                <p>While <code>apply()</code> was removed in Python 3 for general functions, it is a critical concept in Pandas (which we will cover in Tab 7) for applying a function along an axis of a DataFrame.</p>
+            </div>
+        </div>
+
+        <!-- Tab 2: Iteration & Comprehensions -->
+        <div id="tab-2" class="tab-pane">
+            <h2>Iteration & Comprehensions</h2>
+            <p>Python provides elegant ways to loop through data and create new collections.</p>
+            
+            <div class="concept-card">
+                <h4>zip()</h4>
+                <p>Takes iterables, aggregates them in a tuple, and returns an iterator. It stops when the shortest iterable is exhausted.</p>
+<pre><code>names = ["Alice", "Bob", "Charlie"]
+scores = [85, 92, 78]
+
+for name, score in zip(names, scores):
+    print(f"{name} scored {score}")</code></pre>
+                <button class="run-btn" onclick="runCode(this)" data-output="Alice scored 85&#10;Bob scored 92&#10;Charlie scored 78">▶ Run Code</button>
+                <div class="output-box"></div>
+            </div>
+
+            <div class="concept-card">
+                <h4>enumerate()</h4>
+                <p>Adds a counter to an iterable and returns it in a form of enumerating object. Extremely useful when you need both the index and the value during a loop.</p>
+<pre><code>fruits = ["apple", "banana", "cherry"]
+for index, fruit in enumerate(fruits, start=1):
+    print(f"{index}: {fruit}")</code></pre>
+                <button class="run-btn" onclick="runCode(this)" data-output="1: apple&#10;2: banana&#10;3: cherry">▶ Run Code</button>
+                <div class="output-box"></div>
+            </div>
+
+            <div class="concept-card">
+                <h4>List Comprehensions</h4>
+                <p>A concise, readable way to create lists based on existing lists. They are generally faster than standard for-loops.</p>
+<pre><code># Syntax: [expression for item in iterable if condition]
+nums = [1, 2, 3, 4, 5]
+
+squared = [x**2 for x in nums] 
+evens = [x for x in nums if x % 2 == 0]
+
+print("Squared:", squared)
+print("Evens:", evens)</code></pre>
+                <button class="run-btn" onclick="runCode(this)" data-output="Squared: [1, 4, 9, 16, 25]&#10;Evens: [2, 4]">▶ Run Code</button>
+                <div class="output-box"></div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Error Handling -->
+        <div id="tab-3" class="tab-pane">
+            <h2>Error Handling (Exceptions)</h2>
+            <p>Robust code anticipates and handles potential errors gracefully rather than crashing.</p>
+            
+            <div class="concept-card">
+                <h4>Try - Except - Finally</h4>
+                <p>The <code>try</code> block lets you test a block of code for errors. The <code>except</code> block lets you handle the error. The <code>finally</code> block executes code regardless of the result.</p>
+<pre><code>def divide_numbers(x, y):
+    try:
+        # Code that might cause an exception
+        result = x / y
+        print(f"Result is {result}")
+        
+    except ZeroDivisionError:
+        # Executes if a ZeroDivisionError occurs
+        print("Error: Cannot divide by zero!")
+        
+    except TypeError:
+        # Executes if a TypeError occurs
+        print("Error: Inputs must be numbers.")
+        
+    finally:
+        # Always executes, useful for closing files or connections
+        print("Execution complete.")
+
+# Test it out! Change x and y below.
+divide_numbers(x, y)</code></pre>
+                <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center; font-family: 'Inter', sans-serif;">
+                    <label>x = <input type="text" id="err-x" value="10" style="width: 60px; background: var(--code-bg); color: var(--text-color); border: 1px solid var(--border); padding: 4px; border-radius: 4px;"></label>
+                    <label>y = <input type="text" id="err-y" value="0" style="width: 60px; background: var(--code-bg); color: var(--text-color); border: 1px solid var(--border); padding: 4px; border-radius: 4px;"></label>
+                </div>
+                <button class="run-btn" onclick="runInteractiveError()">▶ Run Code</button>
+                <div class="output-box" id="err-output"></div>
+            </div>
+        </div>
+
+        <!-- Tab 4: NumPy -->
+        <div id="tab-4" class="tab-pane">
+            <h2>NumPy Basics</h2>
+            <p>NumPy (Numerical Python) is the foundational package for mathematical computing in Python, built around high-performance multi-dimensional array objects.</p>
+            
+            <h3>Array Creation</h3>
+            <div class="concept-card">
+<pre><code>import numpy as np
+
+# np.array(): Create from a standard Python list
+arr1 = np.array([1, 2, 3])
+
+# np.zeros(): Array filled with 0s (shape tuple required)
+arr_zeros = np.zeros((2, 3))  # 2 rows, 3 columns
+
+# np.ones(): Array filled with 1s
+arr_ones = np.ones((2, 2))
+
+# np.full(): Array filled with a specific value
+arr_full = np.full((3, 3), 7) # 3x3 array of 7s
+
+# np.eye(): Identity matrix (1s on diagonal, 0s elsewhere)
+identity = np.eye(3)
+
+print("np.zeros((2, 3)) output:\n", arr_zeros)</code></pre>
+                <button class="run-btn" onclick="runCode(this)" data-output="np.zeros((2, 3)) output:&#10; [[0. 0. 0.]&#10;  [0. 0. 0.]]">▶ Run Code</button>
+                <div class="output-box"></div>
+            </div>
+
+            <h3>Array Attributes</h3>
+            <div class="concept-card">
+                <p>Understanding the structure of your data is critical. Use these attributes to inspect arrays without modifying them.</p>
+                <table>
+                    <tr><th>Attribute</th><th>Description</th><th>Example Output</th></tr>
+                    <tr><td><code>arr.shape</code></td><td>Tuple indicating the size of each dimension.</td><td><code>(2, 3)</code></td></tr>
+                    <tr><td><code>arr.ndim</code></td><td>The number of axes (dimensions) of the array.</td><td><code>2</code></td></tr>
+                    <tr><td><code>arr.size</code></td><td>Total number of elements in the array.</td><td><code>6</code></td></tr>
+                    <tr><td><code>arr.dtype</code></td><td>Data type of the array's elements.</td><td><code>dtype('int64')</code></td></tr>
+                </table>
+<pre><code>my_arr = np.array([[1, 2, 3], [4, 5, 6]])
+print("Shape:", my_arr.shape)
+print("Size:", my_arr.size)
+print("Dimensions:", my_arr.ndim)</code></pre>
+                <button class="run-btn" onclick="runCode(this)" data-output="Shape: (2, 3)&#10;Size: 6&#10;Dimensions: 2">▶ Run Code</button>
+                <div class="output-box"></div>
+            </div>
+        </div>
+
+        <!-- Tab 5: Pandas I/O & Inspection -->
+        <div id="tab-5" class="tab-pane">
+            <h2>Pandas: I/O & Inspection</h2>
+            <p>Pandas is built on top of NumPy and provides easy-to-use data structures (Series and DataFrames) and data analysis tools.</p>
+            
+            <h3>Input / Output (I/O)</h3>
+            <div class="concept-card">
+                <p>Pandas can read from and write to almost any standard data format.</p>
+<pre><code>import pandas as pd
+
+# Examples of reading data:
+# df = pd.read_csv('data.csv')
+# df = pd.read_excel('data.xlsx', sheet_name='Sales')
+# df = pd.read_sql('SELECT * FROM table', connection)
+# df = pd.read_json('data.json')
+# df = pd.read_parquet('data.parquet')
+
+print("Pandas library imported. Ready to read files.")</code></pre>
+                <button class="run-btn" onclick="runCode(this)" data-output="Pandas library imported. Ready to read files.">▶ Run Code</button>
+                <div class="output-box"></div>
+            </div>
+
+            <h3>Data Inspection</h3>
+            <div class="concept-card">
+                <p>Once data is loaded, you must inspect it to understand its structure and contents.</p>
+                <table>
+                    <tr><th>Method / Attribute</th><th>Description</th></tr>
+                    <tr><td><code>df.head(n)</code></td><td>View the first n rows (default 5).</td></tr>
+                    <tr><td><code>df.tail(n)</code></td><td>View the last n rows.</td></tr>
+                    <tr><td><code>df.info()</code></td><td>Summary of DataFrame (columns, null counts, dtypes, memory).</td></tr>
+                    <tr><td><code>df.describe()</code></td><td>Statistical summary of numerical columns (mean, min, max, quartiles).</td></tr>
+                    <tr><td><code>df.shape</code></td><td>Returns a tuple representing (rows, columns).</td></tr>
+                    <tr><td><code>df.dtypes</code></td><td>Returns the data types of each column.</td></tr>
+                </table>
+            </div>
+
+            <h3>Exploring Specific Columns</h3>
+            <div class="concept-card">
+<pre><code># Assume df is a dataset of fruits
+# Unique values in a column
+# df['category'].unique()
+
+# Number of unique values
+# df['category'].nunique()
+
+# Frequency of each unique value
+# df['category'].value_counts()</code></pre>
+            </div>
+        </div>
+
+        <!-- Tab 6: Pandas Data Cleaning -->
+        <div id="tab-6" class="tab-pane">
+            <h2>Pandas: Data Cleaning</h2>
+            <p>Real-world data is messy. Pandas provides robust tools for handling missing data, removing duplicates, and sorting.</p>
+            
+            <h3>Handling Missing Values</h3>
+            <div class="concept-card">
+<pre><code># Check for missing values (returns boolean mask)
+# df.isna()    # or df.isnull()
+
+# Fill missing values with a specific value or method
+# df.fillna(0)
+# df.fillna(method='ffill') # Forward fill
+
+# Drop rows (or columns) containing missing values
+# df.dropna(axis=0) # drops rows with any NaN
+
+# Interpolate missing values (great for numerical time series)
+# df.interpolate(method='linear')</code></pre>
+            </div>
+
+            <h3>Duplicates & Sorting</h3>
+            <div class="concept-card">
+<pre><code># Remove duplicate rows
+# df.drop_duplicates(subset=['id_column'], keep='first')
+
+# Sort DataFrame by one or multiple columns
+# df.sort_values(by='salary', ascending=False)
+# df.sort_values(by=['department', 'salary'], ascending=[True, False])
+
+# Sort by the index (row labels)
+# df.sort_index()</code></pre>
+            </div>
+        </div>
+
+        <!-- Tab 7: Pandas Column Mod & Functions -->
+        <div id="tab-7" class="tab-pane">
+            <h2>Pandas: Column Modification & Custom Functions</h2>
+            
+            <h3>Column Modification & Type Conversion</h3>
+            <div class="concept-card">
+<pre><code># Rename specific columns
+# df.rename(columns={'old_name': 'new_name', 'price': 'cost'})
+
+# Convert data types
+# df['price'] = df['price'].astype(float)
+# df['is_active'] = df['is_active'].astype(bool)
+
+# Replace specific values across the DataFrame or in a column
+# df.replace({'Yes': 1, 'No': 0})</code></pre>
+            </div>
+
+            <h3>Applying Custom Functions</h3>
+            <div class="concept-card">
+                <p>When built-in methods aren't enough, you can apply your own logic using these methods.</p>
+                <table>
+                    <tr><th>Method</th><th>Usage</th></tr>
+                    <tr><td><code>df.apply()</code></td><td>Applies a function along an axis (rows or columns) of the DataFrame. Often used with lambda functions.</td></tr>
+                    <tr><td><code>df.map()</code></td><td>Used on a Series (single column) to substitute each value with another value, derived from a function, a dictionary, or a Series. (Note: <code>applymap()</code> was deprecated in favor of <code>DataFrame.map()</code> in recent versions).</td></tr>
+                    <tr><td><code>df.transform()</code></td><td>Applies a function and returns a DataFrame/Series with the <em>same shape</em> as the input. Excellent for standardizing data.</td></tr>
+                </table>
+<pre><code># Apply: Custom logic row by row
+# df['total'] = df.apply(lambda row: row['price'] * row['qty'], axis=1)
+
+# Map: Dictionary substitution on a single column
+# df['status_code'] = df['status'].map({'Active': 1, 'Inactive': 0})
+
+# Transform: Example - standardize a column (Z-score)
+# df['price_z'] = df['price'].transform(lambda x: (x - x.mean()) / x.std())</code></pre>
+            </div>
+        </div>
+
+        <!-- Tab 8: Pandas Grouping & Reshaping -->
+        <div id="tab-8" class="tab-pane">
+            <h2>Pandas: Grouping & Reshaping</h2>
+            
+            <h3>Aggregation & Grouping</h3>
+            <div class="concept-card">
+                <p>The "split-apply-combine" pattern.</p>
+<pre><code># Group by a column and calculate the mean of other columns
+# df.groupby('department').mean()
+
+# .agg(): Apply multiple specific aggregations
+# df.groupby('department').agg({
+#     'salary': ['mean', 'max'],
+#     'employee_id': 'count'
+# })
+
+# Pivot Table: Spreadsheet style pivoting
+# df.pivot_table(values='sales', index='region', columns='year', aggfunc='sum')
+
+# Crosstab: Compute a simple cross-tabulation of two factors
+# pd.crosstab(df['region'], df['product_category'])</code></pre>
+            </div>
+
+            <h3>Reshaping Datasets</h3>
+            <div class="concept-card">
+                <p>Changing the structural layout of the data.</p>
+<pre><code># Melt: Unpivot a DataFrame from wide to long format
+# df.melt(id_vars=['id', 'name'], value_vars=['Q1', 'Q2'], var_name='Quarter', value_name='Revenue')
+
+# Pivot: Long to wide format (must not have duplicates for given index/columns)
+# df.pivot(index='date', columns='stock_ticker', values='price')
+
+# Stack / Unstack: Pivot the innermost levels of the row/column MultiIndex
+# df.stack()   # columns to index
+# df.unstack() # index to columns</code></pre>
+            </div>
+        </div>
+
+        <!-- Tab 9: Pandas Merging -->
+        <div id="tab-9" class="tab-pane">
+            <h2>Pandas: Combining Datasets</h2>
+            <p>Data rarely lives in a single table. Pandas provides versatile ways to stitch datasets together.</p>
+            
+            <div class="concept-card">
+                <h4>pd.merge()</h4>
+                <p>Performs SQL-style database joins on specific columns or indices.</p>
+<pre><code># Inner join by default
+# pd.merge(df1, df2, on='customer_id')
+
+# Left join
+# pd.merge(df1, df2, how='left', left_on='id', right_on='customer_id')</code></pre>
+            </div>
+
+            <div class="concept-card">
+                <h4>pd.concat()</h4>
+                <p>Glues DataFrames together along an axis (either stacking them vertically or aligning them horizontally).</p>
+<pre><code># Stack vertically (adds rows)
+# pd.concat([df_jan, df_feb], axis=0)
+
+# Stack horizontally (adds columns)
+# pd.concat([df1, df2], axis=1)</code></pre>
+            </div>
+
+            <div class="concept-card">
+                <h4>df.join()</h4>
+                <p>A convenient method for joining the columns of two potentially differently-indexed DataFrames (relies on indices rather than columns by default).</p>
+<pre><code># Joins df_other into df based on indices
+# df.join(df_other, how='left')</code></pre>
+            </div>
+        </div>
+
+        <!-- Tab 10: Pandas Time Series -->
+        <div id="tab-10" class="tab-pane">
+            <h2>Pandas: Time Series & Windowing</h2>
+            <p>Pandas was originally developed for financial modeling, so its time series capabilities are world-class.</p>
+            
+            <h3>Datetime Parsing</h3>
+            <div class="concept-card">
+<pre><code># Convert string column to actual datetime objects
+# df['date'] = pd.to_datetime(df['date_string'])
+
+# The .dt accessor allows extraction of datetime properties
+# df['year'] = df['date'].dt.year
+# df['month'] = df['date'].dt.month
+# df['day_of_week'] = df['date'].dt.day_name()</code></pre>
+            </div>
+
+            <h3>Resampling & Windows</h3>
+            <div class="concept-card">
+                <p>These operations generally require the DataFrame index to be a datetime type.</p>
+<pre><code># Set index to datetime for time-series operations
+# df.set_index('date', inplace=True)
+
+# Resample: Change frequency (e.g., daily to monthly) and aggregate
+# df.resample('M').sum() # Monthly sum
+
+# Rolling: Create a sliding window for calculations (e.g., moving average)
+# df['7_day_MA'] = df['price'].rolling(window=7).mean()
+
+# Expanding: Cumulative calculations from the start of the series
+# df['cumulative_sum'] = df['sales'].expanding().sum()
+
+# Shift: Shift index by desired number of periods (useful for calculating % change)
+# df['prev_day_price'] = df['price'].shift(1)
+# df['daily_return'] = (df['price'] - df['prev_day_price']) / df['prev_day_price']</code></pre>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript for Interactivity -->
+    <script>
+        // Theme Toggle Logic
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+        }
+
+        // Tab switching logic
+        function openTab(tabId, btnElement) {
+            const panes = document.querySelectorAll('.tab-pane');
+            panes.forEach(pane => pane.classList.remove('active'));
+
+            const btns = document.querySelectorAll('.tab-btn');
+            btns.forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            btnElement.classList.add('active');
+        }
+
+        // Run Button Logic
+        function runCode(btn) {
+            const outputBox = btn.nextElementSibling;
+            const outputText = btn.getAttribute('data-output');
+            
+            if (outputBox.style.display === 'block') {
+                outputBox.style.display = 'none';
+                btn.innerHTML = '▶ Run Code';
+            } else {
+                outputBox.style.display = 'block';
+                outputBox.textContent = outputText;
+                btn.innerHTML = '▼ Hide Output';
+            }
+        }
+
+        // Interactive Error Handling Logic
+        function runInteractiveError() {
+            const outputBox = document.getElementById('err-output');
+            const xStr = document.getElementById('err-x').value;
+            const yStr = document.getElementById('err-y').value;
+            let output = "";
+            
+            // Simulating Python's exception handling in JS
+            if (isNaN(xStr) || isNaN(yStr) || xStr.trim() === "" || yStr.trim() === "") {
+                output += "Error: Inputs must be numbers.\n";
+            } else {
+                const x = parseFloat(xStr);
+                const y = parseFloat(yStr);
+                
+                if (y === 0) {
+                    output += "Error: Cannot divide by zero!\n";
+                } else {
+                    const result = x / y;
+                    output += "Result is " + result + "\n";
+                }
+            }
+            output += "Execution complete.";
+            
+            outputBox.style.display = 'block';
+            outputBox.textContent = output;
+        }
+    </script>
+</body>
+</html>
