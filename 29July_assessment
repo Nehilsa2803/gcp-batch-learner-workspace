@@ -1,0 +1,47 @@
+# Gaming python case study
+
+-- 1. List Comprehension
+
+username_list = players_df['username'].tolist()
+real_players = [user for user in username_list if not user.startswith('bot_')]
+print(real_players)
+
+-- 2. Pandas Basics
+
+hardcore_sessions = sessions_df[sessions_df['duration_mins'] > 100]
+print(hardcore_sessions)
+
+-- 3. Pandas Grouping
+
+total_duration = session_df.groupby("player_id")["duration_mins"].sum()
+print(total_duration)
+
+-- 4. Pandas Joining
+
+merged_df = pd.merge(sessions_df, players_df, on='player_id', how='inner')
+print(merged_df.head())
+
+-- 5. Function Apply
+
+def calculate_bonus(duration):
+    return 'High' if duration > 60 else 'Low'
+
+sessions_df['engagement_tier'] = sessions_df['duration_mins'].apply(calculate_bonus)
+
+print(sessions_df)
+
+-- 6. Data Cleaning
+
+sessions_df['xp_gained'].fillna(0, inplace=True)
+print(sessions_df)
+
+-- 7. String Manipulation
+
+players_df['username'] = players_df['username'].str.upper()
+print(players_df)
+
+-- 8. Time Series / Dates
+
+sessions_df['date'] = pd.to_datetime(sessions_df['date'])
+sessions_df['month'] = sessions_df['date'].dt.month
+print(sessions_df)
