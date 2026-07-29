@@ -1,0 +1,118 @@
+Scenario: GlobalMart Loyalty Tier System
+
+Q1.
+import pandas as pd
+
+data = pd.read_excel(
+    "1322f651-7327-4e38-8b1e-2082aef076f0__globalmart.xlsx",
+    sheet_name=None
+)
+
+orders = data['orders']
+customers = data['customers']
+transactions=data['transactions']
+
+print("Orders DataFrame head:")
+display(orders.head())
+
+print("Customers DataFrame head:")
+display(customers.head())
+
+merged = orders.merge(
+    customers,
+    on="customer_id",
+    how="left",
+    indicator=True
+)
+orders_without_customer = merged[merged["_merge"] == "left_only"]
+print("Number of orders without customer details:", len(orders_without_customer))
+
+merged=orders.merge(
+    transactions,
+    on="order_id",
+    how="left",
+    indicator=True
+)
+orders['order_purchase_date'] = pd.to_datetime(orders['order_purchase_date'])
+
+curr_date = orders["order_purchase_date"].max()
+last_6_months = merged[
+    merged["order_purchase_date"] >= curr_date - pd.DateOffset(months=6)
+]
+
+customer_summary = (
+    last_6_months.groupby("customer_id").agg(
+        total_spending=("sales_amt", "sum"),
+        order_count=("order_id", "nunique")
+    )
+    .reset_index()
+)
+def loyalty(row):
+  spend= row["total_spending"]
+  orders=row["order_count"]
+
+  if spend<500:
+    tier="Silver"
+    discount=4 if orders>=10 else 2
+  elif spend<=2000:
+    tier="Gold"
+    discount=8 if orders>10 else 6
+  else:
+    tier="Platinum"
+    discount=15 if orders>=10 else 10
+  return pd.Series([tier,discount])
+
+customer_summary[["tier","discount"]]=customer_summary.apply(loyalty,axis=1)
+customer_summary.head()
+
+
+Q2.
+new_orders_url = "https://cdn.enqurious.com/documents/517cad90-cfb3-48fe-975e-256d942412ac_neworders.csv"
+new_orders_df = pd.read_csv(new_orders_url)
+display(new_orders_df.head())
+
+discount_report = (
+    new_orders_df
+    .merge(
+        customer_summary[["customer_id", "tier", "discount"]],
+        on="customer_id",
+        how="left"
+    )
+    .merge(
+        customers[["customer_id", "customer_name"]],
+        on="customer_id",
+        how="left"
+    )
+)
+
+discount_report["discounted_price"] = (
+    discount_report["original_price"] *
+    (1 - discount_report["discount"] / 100)
+)
+
+discount_report = discount_report.rename(
+    columns={"discount": "discount_applicable"}
+)
+
+discount_report.head()
+
+discount_report["discounted_price"] = (
+    discount_report["original_price"]
+    * (1 - discount_report["discount"] / 100)
+)
+discount_report = discount_report.rename(
+    columns={"discount": "discount_applicable"}
+)
+discount_report = discount_report[
+    [
+        "Order_id",
+        "customer_id",
+        "customer_name",
+        "original_price",
+        "discount_applicable",
+        "discounted_price"
+    ]
+]
+discount_report["discounted_price"] = (
+    discount_report["discounted_price"].round(3)
+)
