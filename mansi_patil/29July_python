@@ -1,0 +1,107 @@
+import pandas as pd
+import numpy as np
+# Load datasets
+customers_df = pd.read_excel("https://cdn.enqurious.com/others/46de2415-dc50-46ed-8133-cccc2f034680_globalmart.xlsx", sheet_name='customers') # Add the path
+
+orders_df = pd.read_excel("https://cdn.enqurious.com/others/46de2415-dc50-46ed-8133-cccc2f034680_globalmart.xlsx", sheet_name='orders') # Add the path 
+
+trans = pd.read_excel("https://cdn.enqurious.com/others/46de2415-dc50-46ed-8133-cccc2f034680_globalmart.xlsx", sheet_name='transactions') 
+
+-- 1.
+orders_trans_df = pd.merge(orders_df,trans,on="order_id",how="inner")
+orders_trans_df['order_purchase_date'] = pd.to_datetime(orders_trans_df['order_purchase_date'])
+max_date = orders_trans_df['order_purchase_date'].max()
+six_months_ago = max_date - pd.DateOffset(months=6)
+orders_six_months = orders_trans_df[orders_trans_df['order_purchase_date'] >= six_months_ago].copy()
+x = orders_six_months['order_id'].count()
+print(x)
+customer_stats = (orders_six_months.groupby("customer_id").agg(total_spending = ("sales_amt","sum"),order_count = ("order_id","nunique"),).reset_index())
+
+loyalty_report = pd.merge(customers_df, customer_stats, on="customer_id", how="left")[["customer_id", "customer_name", "total_spending", "order_count"]]
+loyalty_report["total_spending"] = loyalty_report["total_spending"].fillna(0)
+loyalty_report["order_count"] = loyalty_report["order_count"].fillna(0)
+
+def assign_tier_and_discount(row):
+   spending = row["total_spending"]
+   count = row["order_count"]
+
+   if spending < 500:
+      tier = "Silver"
+      if count < 10:
+        discount = 2
+      else:
+        discount = 4
+   elif 500 <= spending <= 2000:
+      tier = "Gold"
+      if count < 10:
+        discount = 6
+      else:
+        discount = 8
+   else:
+      tier = "Platinum"
+      if count < 10:
+        discount = 10
+      else:
+        discount = 15
+   return pd.Series([tier, discount], index = ["tier","discount_applicable"])
+
+loyalty_report[["tier","discount_applicable"]] = loyalty_report.apply(
+   assign_tier_and_discount, axis=1 
+)
+loyalty_report = loyalty_report[
+    [
+        "customer_id",
+        "customer_name",
+        "total_spending",
+        "order_count",
+        "tier",
+        "discount_applicable",
+    ]
+]
+
+loyalty_report.head()
+
+
+-- 2. 
+# new_orders_df is already loaded
+# loyalty_report is available from the previous step
+
+# This dataset contains the upcoming orders that need promotional pricing applied
+new_orders_url = "https://cdn.enqurious.com/documents/517cad90-cfb3-48fe-975e-256d942412ac_neworders.csv"
+
+new_orders_df = pd.read_csv(new_orders_url)
+
+# Merge the new orders dataset with the loyalty report using a left merge
+# to ensure all new orders are retained even if a customer has no history
+discounted_pricing_report = pd.merge(
+    new_orders_df,
+    loyalty_report[["customer_id", "customer_name", "discount_applicable"]],
+    on="customer_id",
+    how="left",
+)
+
+# Fill missing discounts with 0 for new customers with no history
+discounted_pricing_report["discount_applicable"] = (
+    discounted_pricing_report["discount_applicable"].fillna(0)
+)
+
+# Calculate the discounted price using the given formula:
+# Discounted Price = Original Price * (1 - Discount Applicable / 100)
+discounted_pricing_report["discounted_price"] = discounted_pricing_report[
+    "original_price"
+] * (1 - discounted_pricing_report["discount_applicable"] / 100)
+
+# Select and order the final required columns
+discounted_pricing_report = discounted_pricing_report[
+    [
+        "Order_id",
+        "customer_id",
+        "customer_name",
+        "original_price",
+        "discount_applicable",
+        "discounted_price",
+    ]
+]
+
+# Display the final report
+print(discounted_pricing_report)
