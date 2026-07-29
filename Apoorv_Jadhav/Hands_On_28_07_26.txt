@@ -1,0 +1,191 @@
+-- Query to get the required report:----------
+WITH Cat_Sales AS(
+	SELECT 
+		p.category,
+		p.sub_category,
+		t.sales_amount
+	FROM ex_transactions t
+	JOIN ex_products p
+	ON t.product_id = p.product_id
+	JOIN ex_orders o
+	ON t.order_id = o.order_id
+
+	WHERE order_status <> 'canceled'
+	AND order_status <> 'unavailable'
+),
+Sub_Cat_Rank AS(
+	SELECT
+		category,
+		sub_category,
+		SUM(sales_amount) as sub_cat_sales,
+		RANK() OVER(
+			PARTITION BY category
+			ORDER BY SUM(sales_amount) DESC) AS sub_cat_rank
+	FROM Cat_Sales
+	GROUP BY category, sub_category
+),
+
+Sub_Cat_contri AS(
+	SELECT
+		category,
+		sub_category,
+		sub_cat_sales,
+		sub_cat_rank,
+		--sales contri to category
+		ROUND(sub_cat_sales * 100.0/ SUM(sub_cat_sales) OVER(PARTITION BY category),2) AS sales_contribution_to_category,
+		--sales contri overall
+		ROUND(sub_cat_sales * 100.0/ SUM(sub_cat_sales) OVER(),2) AS overall_sales_contribution
+
+	FROM Sub_Cat_Rank
+)
+SELECT * FROM Sub_Cat_contri;
+
+
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+
+--Task 1 Query:-----
+-- To get sales contribution to category for Appliances------
+WITH Cat_Sales AS(
+	SELECT 
+		p.category,
+		p.sub_category,
+		t.sales_amount
+	FROM ex_transactions t
+	JOIN ex_products p
+	ON t.product_id = p.product_id
+	JOIN ex_orders o
+	ON t.order_id = o.order_id
+
+	WHERE order_status <> 'canceled'
+	AND order_status <> 'unavailable'
+),
+Sub_Cat_Rank AS(
+	SELECT
+		category,
+		sub_category,
+		SUM(sales_amount) as sub_cat_sales,
+		RANK() OVER(
+			PARTITION BY category
+			ORDER BY SUM(sales_amount) DESC) AS sub_cat_rank
+	FROM Cat_Sales
+	GROUP BY category, sub_category
+),
+
+Sub_Cat_contri AS(
+	SELECT
+		category,
+		sub_category,
+		sub_cat_sales,
+		sub_cat_rank,
+		--sales contri to category
+		ROUND(sub_cat_sales * 100.0/ SUM(sub_cat_sales) OVER(PARTITION BY category),2) AS sales_contribution_to_category,
+		--sales contri overall
+		ROUND(sub_cat_sales * 100.0/ SUM(sub_cat_sales) OVER(),2) AS overall_sales_contribution
+
+	FROM Sub_Cat_Rank
+)
+
+SELECT * FROM Sub_Cat_contri
+WHERE sub_category = 'Appliances';
+
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+
+--Task 2 Query:------
+--To get sub categories having more than 7% overall contribution -----
+WITH Cat_Sales AS(
+	SELECT 
+		p.category,
+		p.sub_category,
+		t.sales_amount
+	FROM ex_transactions t
+	JOIN ex_products p
+	ON t.product_id = p.product_id
+	JOIN ex_orders o
+	ON t.order_id = o.order_id
+
+	WHERE order_status <> 'canceled'
+	AND order_status <> 'unavailable'
+),
+Sub_Cat_Rank AS(
+	SELECT
+		category,
+		sub_category,
+		SUM(sales_amount) as sub_cat_sales,
+		RANK() OVER(
+			PARTITION BY category
+			ORDER BY SUM(sales_amount) DESC) AS sub_cat_rank
+	FROM Cat_Sales
+	GROUP BY category, sub_category
+),
+
+Sub_Cat_contri AS(
+	SELECT
+		category,
+		sub_category,
+		sub_cat_sales,
+		sub_cat_rank,
+		--sales contri to category
+		ROUND(sub_cat_sales * 100.0/ SUM(sub_cat_sales) OVER(PARTITION BY category),2) AS sales_contribution_to_category,
+		--sales contri overall
+		ROUND(sub_cat_sales * 100.0/ SUM(sub_cat_sales) OVER(),2) AS overall_sales_contribution
+
+	FROM Sub_Cat_Rank
+)
+
+SELECT * FROM Sub_Cat_contri
+WHERE overall_sales_contribution> 7;
+
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+
+--Task 3 Query:--------
+-- To get rank of sub category Machines-----
+
+WITH Cat_Sales AS(
+	SELECT 
+		p.category,
+		p.sub_category,
+		t.sales_amount
+	FROM ex_transactions t
+	JOIN ex_products p
+	ON t.product_id = p.product_id
+	JOIN ex_orders o
+	ON t.order_id = o.order_id
+
+	WHERE order_status <> 'canceled'
+	AND order_status <> 'unavailable'
+),
+Sub_Cat_Rank AS(
+	SELECT
+		category,
+		sub_category,
+		SUM(sales_amount) as sub_cat_sales,
+		RANK() OVER(
+			PARTITION BY category
+			ORDER BY SUM(sales_amount) DESC) AS sub_cat_rank
+	FROM Cat_Sales
+	GROUP BY category, sub_category
+),
+
+Sub_Cat_contri AS(
+	SELECT
+		category,
+		sub_category,
+		sub_cat_sales,
+		sub_cat_rank,
+		--sales contri to category
+		ROUND(sub_cat_sales * 100.0/ SUM(sub_cat_sales) OVER(PARTITION BY category),2) AS sales_contribution_to_category,
+		--sales contri overall
+		ROUND(sub_cat_sales * 100.0/ SUM(sub_cat_sales) OVER(),2) AS overall_sales_contribution
+
+	FROM Sub_Cat_Rank
+)
+
+SELECT * FROM Sub_Cat_contri
+WHERE sub_category= 'Machines';
+
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+

@@ -1,0 +1,84 @@
+WITH SalesAggregates AS (
+    -- Calculate total sales for every sub-category
+    SELECT 
+        p.category,
+        p.sub_category,
+        SUM(t.sales_amount) AS subcategory_sales
+    FROM 
+        ex_transactions t
+    JOIN 
+        ex_products p ON t.product_id = p.product_id
+    JOIN
+        ex_orders o ON o.order_id = t.order_id AND o.order_status NOT IN ('canceled', 'unavailable')
+    GROUP BY 
+        p.category,
+        p.sub_category
+),
+ContributionCalc AS (
+    SELECT 
+        category,
+        sub_category,
+        subcategory_sales,
+        SUM(subcategory_sales) OVER(PARTITION BY category) AS category_sales
+    FROM 
+        SalesAggregates
+)
+SELECT 
+    sub_category,
+    category,
+    subcategory_sales,
+    dense_rank() over (
+        partition by category
+        order by subcategory_sales desc
+    ) as sub_cat_rank,
+    (subcategory_sales / category_sales) * 100 AS sales_contribution_to_category
+FROM 
+    ContributionCalc;
+
+
+
+WITH SubCategorySales AS (
+    -- Calculate sales per sub-category and the grand total for the whole company
+    SELECT 
+        p.sub_category,
+        SUM(t.sales_amount) AS subcategory_sales,
+        SUM(SUM(t.sales_amount)) OVER() AS total_company_sales
+    FROM 
+        ex_transactions t
+    JOIN 
+        ex_products p ON t.product_id = p.product_id
+    GROUP BY 
+        p.sub_category
+)
+-- Filter for sub-categories contributing more than 7%
+SELECT 
+    sub_category,
+    (subcategory_sales / total_company_sales) * 100 AS contribution_percentage
+FROM 
+    SubCategorySales
+WHERE 
+    (subcategory_sales / total_company_sales) * 100 > 7;
+
+
+    
+WITH RankedSubCategories AS (
+    -- Calculate total sales and assign a rank to each sub-category
+    SELECT 
+        p.sub_category,
+        SUM(t.sales_amount) AS total_sales,
+        RANK() OVER(ORDER BY SUM(t.sales_amount) DESC) AS sales_rank
+    FROM 
+        ex_transactions t
+    JOIN 
+        ex_products p ON t.product_id = p.product_id
+    GROUP BY 
+        p.sub_category
+)
+-- Retrieve the specific rank for 'Machines'
+SELECT 
+    sub_category,
+    sales_rank
+FROM 
+    RankedSubCategories
+WHERE 
+    sub_category = 'Machines';

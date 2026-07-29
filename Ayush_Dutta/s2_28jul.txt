@@ -1,0 +1,36 @@
+select
+    category,
+    sub_category,
+
+    dense_rank() over (
+        partition by category
+        order by sub_cat_sales desc
+    ) as sub_cat_rank,
+
+    round(
+        sub_cat_sales * 100.0 /
+        sum(sub_cat_sales) over(partition by category),
+        2
+    ) as sales_contribution_to_category,
+
+    round(
+        sub_cat_sales * 100.0 /
+        sum(sub_cat_sales) over(),
+        2
+    ) as overall_sales_contribution
+
+from (
+    select
+        p.category,
+        p.sub_category,
+        sum(t.sales_amount) as sub_cat_sales
+    from ex_transactions as t
+    join ex_products as p
+        on t.product_id = p.product_id
+    join ex_orders as o
+        on t.order_id = o.order_id
+    where o.order_status not in ('Cancelled', 'Unavailable')
+    group by
+        p.category,
+        p.sub_category
+) as x;

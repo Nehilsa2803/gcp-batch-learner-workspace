@@ -1,0 +1,84 @@
+TASK 1 ROLLUP:
+WITH Loc_sales AS(
+    SELECT
+        l.region,
+        l.state,
+        l.city,
+        t.sales_amount
+
+    FROM ex_transactions t
+    LEFT JOIN ex_orders o
+    ON t.order_id = o.order_id
+    LEFT JOIN ex_customers c
+    ON o.customer_id = c.customer_id
+    LEFT JOIN ex_locations l
+    ON c.postal_code = l.postal_code
+)
+SELECT
+    region,
+    state,
+    city,
+    SUM(sales_amount) AS total_sales
+
+FROM Loc_sales
+GROUP BY
+    ROLLUP(region,state,city);
+#######################################
+
+TASK 2 CUBE:
+WITH Loc_sales AS(
+    SELECT
+        l.region,
+        l.state,
+        l.city,
+        t.sales_amount
+
+    FROM ex_transactions t
+    LEFT JOIN ex_orders o
+    ON t.order_id = o.order_id
+    LEFT JOIN ex_customers c
+    ON o.customer_id = c.customer_id
+    LEFT JOIN ex_locations l
+    ON c.postal_code = l.postal_code
+)
+SELECT
+    region,
+    state,
+    city,
+    SUM(sales_amount) AS total_sales
+
+FROM Loc_sales
+GROUP BY
+    CUBE(region,state,city);
+#######################################
+
+TASK 3 GROUPING SETS:
+WITH Loc_sales AS(
+    SELECT
+        l.region,
+        l.state,
+        l.city,
+        t.sales_amount
+
+    FROM ex_transactions t
+    LEFT JOIN ex_orders o
+    ON t.order_id = o.order_id
+    LEFT JOIN ex_customers c
+    ON o.customer_id = c.customer_id
+    LEFT JOIN ex_locations l
+    ON c.postal_code = l.postal_code
+)
+SELECT
+    region,
+    state,
+    city,
+    SUM(sales_amount) AS total_sales
+
+FROM Loc_sales
+GROUP BY
+    GROUPING SETS(
+        (region,state,city),
+        (region,state),
+        (region),
+        ()
+    );
