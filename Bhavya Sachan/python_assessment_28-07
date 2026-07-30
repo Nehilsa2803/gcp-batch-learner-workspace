@@ -1,0 +1,77 @@
+1. We need to filter out bot accounts. Extract a list of all usernames from `players_df`. Then, use a **List Comprehension** to create a new list `real_players` that only contains usernames that do NOT start with 'bot_'. Print the result.
+
+import pandas as pd
+import numpy as np
+
+df = players_df.copy()
+df_real_players = df.loc[~df['username'].str.startswith('bot_')]
+df_real_players
+
+
+2- Filter `sessions_df` to find all hardcore sessions where `duration_mins` is strictly greater than 100. Print the resulting dataframe.
+
+# Write your code here:
+
+import pandas as pd
+
+df = sessions_df.copy()
+df = df[df['duration_mins'] > 100]
+df
+
+3- Calculate the total `duration_mins` played by each `player_id`. Print the aggregated result.
+
+# Write your code here:
+import pandas as pd
+
+df = sessions_df.copy()
+df['total_duration_mins'] = df.groupby('player_id')['duration_mins'].transform('sum')
+df
+
+4- Merge `sessions_df` with `players_df` on the `player_id` column using an inner join to see which region played each session. Print the first few rows using `.head()`.
+
+# Write your code here:
+
+import pandas as pd
+
+df = pd.merge(sessions_df , players_df , on = 'player_id')
+df.head()
+
+
+5- Write a Python function `calculate_bonus(duration)` that returns 'High' if duration is > 60, and 'Low' otherwise. Apply this to the `duration_mins` column to create a new column `engagement_tier`. Print the dataframe.
+
+# Write your code here:
+df= sessions_df.copy()
+
+def calculate_bonus(duration):
+    if duration > 60:
+        return 'High'
+    else:
+        return 'Low'
+
+
+df['engagement_tier'] = df['duration_mins'].apply(calculate_bonus)
+df.head()
+
+6- Some sessions crashed, resulting in missing `xp_gained` values (NaN). Fill these missing values with `0` in-place. Print the dataframe to verify.
+
+# Write your code here:
+df = sessions_df.copy()
+df["xp_gained"].fillna(0, inplace=True)
+df.head()
+
+
+7- Make the `username` column in `players_df` uppercase for better display in the UI. Modify the column and print `players_df`.
+
+# Write your code here:
+df = players_df.copy()
+df['username'] = df['username'].str.upper()
+df.head()
+
+
+8- Convert the `date` column in `sessions_df` into proper datetime objects. Then, extract the month into a new column called `month`. Print `sessions_df`.
+
+# Write your code here:
+df = sessions_df.copy()
+df['date'] = pd.to_datetime(df['date'])
+df['month'] = df['date'].dt.month
+df.head()
